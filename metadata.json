@@ -1,0 +1,5 @@
+{
+  "name": "LucidGen Icon Creator",
+  "description": "Generate clean, consistent SVG icons in the Lucid style using Gemini 2.5 Flash.",
+  "requestFramePermissions": []
+}
