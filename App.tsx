@@ -20,37 +20,56 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Style Options Definition
 const STYLES: { value: IconStyle; label: string; group: string }[] = [
-  // Default / Modern
-  { value: 'lucid', label: 'Lucid (Minimalist)', group: 'Modern UI' },
-  { value: 'swiss', label: 'Swiss International', group: 'Modern UI' },
-  { value: 'bauhaus', label: 'Bauhaus', group: 'Modern UI' },
-  
-  // Historical / Art Movements
-  { value: 'art_nouveau', label: 'Art Nouveau', group: 'Art Movements' },
+  // Default
+  { value: 'lucid', label: 'Lucid (Default)', group: 'Essentials' },
+
+  // 3D Styles
+  { value: 'photorealistic', label: 'Photorealistic 3D', group: '3D Styles' },
+  { value: 'clay_3d', label: 'Smooth Clay 3D', group: '3D Styles' },
+  { value: 'low_poly', label: 'Low Poly 3D', group: '3D Styles' },
+  { value: 'glossy_3d', label: 'Glossy Plastic 3D', group: '3D Styles' },
+  { value: 'rubber_3d', label: 'Soft Rubber 3D', group: '3D Styles' },
+  { value: 'metallic_3d', label: 'Metallic 3D', group: '3D Styles' },
+  { value: 'glass_3d', label: 'Glass Transparent 3D', group: '3D Styles' },
+  { value: 'voxel_3d', label: 'Voxel Cubic 3D', group: '3D Styles' },
+  { value: 'balloon_3d', label: 'Inflated Balloon 3D', group: '3D Styles' },
+  { value: 'liquid_3d', label: 'Melting Liquid 3D', group: '3D Styles' },
+
+  // Modern Professional 2D
+  { value: 'material', label: 'Material Design', group: 'Modern Professional' },
+  { value: 'fluent', label: 'Fluent Design', group: 'Modern Professional' },
+  { value: 'logo_mark', label: 'Logo Mark', group: 'Modern Professional' },
+  { value: 'corporate', label: 'Corporate Minimal', group: 'Modern Professional' },
+  { value: 'startup', label: 'Tech Startup', group: 'Modern Professional' },
+  { value: 'flat_25d', label: 'Flat 2.5D', group: 'Modern Professional' },
+  { value: 'duotone', label: 'Duotone Split', group: 'Modern Professional' },
+  { value: 'badge', label: 'Outlined Badge', group: 'Modern Professional' },
+
+  // Hand-drawn & Organic
+  { value: 'crayon', label: 'Kids Crayon Drawing', group: 'Hand-drawn & Organic' },
+  { value: 'ink_sketch', label: 'Ink Sketch', group: 'Hand-drawn & Organic' },
+  { value: 'doodle', label: 'Doodle Style', group: 'Hand-drawn & Organic' },
+  { value: 'comic', label: 'Comic Book', group: 'Hand-drawn & Organic' },
+  { value: 'chalk', label: 'Chalk Texture', group: 'Hand-drawn & Organic' },
+  { value: 'marker', label: 'Marker Drawing', group: 'Hand-drawn & Organic' },
+
+  // Abstract & Artistic
+  { value: 'geometric', label: 'Geometric Abstract', group: 'Abstract & Artistic' },
+  { value: 'fluid', label: 'Fluid Organic', group: 'Abstract & Artistic' },
+  { value: 'glitch', label: 'Glitch Art', group: 'Abstract & Artistic' },
+  { value: 'single_line', label: 'Minimalist Single Line', group: 'Abstract & Artistic' },
+  { value: 'splatter', label: 'Splatter Paint', group: 'Abstract & Artistic' },
+  { value: 'negative_space', label: 'Negative Space', group: 'Abstract & Artistic' },
+
+  // Legacy / Movements
+  { value: 'bauhaus', label: 'Bauhaus', group: 'Art Movements' },
   { value: 'art_deco', label: 'Art Deco', group: 'Art Movements' },
-  { value: 'de_stijl', label: 'De Stijl', group: 'Art Movements' },
-  { value: 'mid_century', label: 'Mid-Century Modern', group: 'Art Movements' },
-  { value: 'pop_art', label: 'Pop Art', group: 'Art Movements' },
   { value: 'brutalist', label: 'Brutalist', group: 'Art Movements' },
-
-  // Technical / Structural
-  { value: 'isometric', label: 'Isometric 3D', group: 'Technical' },
-  { value: 'pixel', label: 'Pixel Art (8-Bit)', group: 'Technical' },
-  { value: 'stencil', label: 'Industrial Stencil', group: 'Technical' },
-  { value: 'origami', label: 'Origami / Folded', group: 'Technical' },
-
-  // Theme / Vibe
+  { value: 'mid_century', label: 'Mid-Century Modern', group: 'Art Movements' },
   { value: 'cyberpunk', label: 'Cyberpunk', group: 'Thematic' },
+  { value: 'pixel', label: 'Pixel Art (8-Bit)', group: 'Thematic' },
   { value: 'steampunk', label: 'Steampunk', group: 'Thematic' },
   { value: 'gothic', label: 'Gothic', group: 'Thematic' },
-  
-  // Artistic / Hand-made
-  { value: 'sketch', label: 'Ink Sketch', group: 'Artistic' },
-  { value: 'victorian', label: 'Victorian Etching', group: 'Artistic' },
-  
-  // Cultural
-  { value: 'japanese', label: 'Japanese Minimalist', group: 'Cultural' },
-  { value: 'tribal', label: 'Tribal / Aztec', group: 'Cultural' },
 ];
 
 const App: React.FC = () => {
