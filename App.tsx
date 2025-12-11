@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { generateIcon } from './services/geminiService';
+import React, { useState, useEffect, useRef } from 'react';
+import JSZip from 'jszip';
+import { generateIcon, IconStyle } from './services/geminiService';
 import { traceImageToSvg } from './services/vectorizerService';
 import { GeneratedIcon } from './types';
 import { Button } from './components/Button';
@@ -15,13 +16,62 @@ const AppLogo = () => (
   </svg>
 );
 
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Style Options Definition
+const STYLES: { value: IconStyle; label: string; group: string }[] = [
+  // Default / Modern
+  { value: 'lucid', label: 'Lucid (Minimalist)', group: 'Modern UI' },
+  { value: 'swiss', label: 'Swiss International', group: 'Modern UI' },
+  { value: 'bauhaus', label: 'Bauhaus', group: 'Modern UI' },
+  
+  // Historical / Art Movements
+  { value: 'art_nouveau', label: 'Art Nouveau', group: 'Art Movements' },
+  { value: 'art_deco', label: 'Art Deco', group: 'Art Movements' },
+  { value: 'de_stijl', label: 'De Stijl', group: 'Art Movements' },
+  { value: 'mid_century', label: 'Mid-Century Modern', group: 'Art Movements' },
+  { value: 'pop_art', label: 'Pop Art', group: 'Art Movements' },
+  { value: 'brutalist', label: 'Brutalist', group: 'Art Movements' },
+
+  // Technical / Structural
+  { value: 'isometric', label: 'Isometric 3D', group: 'Technical' },
+  { value: 'pixel', label: 'Pixel Art (8-Bit)', group: 'Technical' },
+  { value: 'stencil', label: 'Industrial Stencil', group: 'Technical' },
+  { value: 'origami', label: 'Origami / Folded', group: 'Technical' },
+
+  // Theme / Vibe
+  { value: 'cyberpunk', label: 'Cyberpunk', group: 'Thematic' },
+  { value: 'steampunk', label: 'Steampunk', group: 'Thematic' },
+  { value: 'gothic', label: 'Gothic', group: 'Thematic' },
+  
+  // Artistic / Hand-made
+  { value: 'sketch', label: 'Ink Sketch', group: 'Artistic' },
+  { value: 'victorian', label: 'Victorian Etching', group: 'Artistic' },
+  
+  // Cultural
+  { value: 'japanese', label: 'Japanese Minimalist', group: 'Cultural' },
+  { value: 'tribal', label: 'Tribal / Aztec', group: 'Cultural' },
+];
+
 const App: React.FC = () => {
+  // Single Mode State
   const [prompt, setPrompt] = useState('');
   const [description, setDescription] = useState('');
+  
+  // UI State
+  const [mode, setMode] = useState<'single' | 'batch'>('single');
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState('Generating...');
+  const [zipping, setZipping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<GeneratedIcon[]>([]);
+  const [selectedStyle, setSelectedStyle] = useState<IconStyle>('lucid');
+
+  // Batch Mode State
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [batchFile, setBatchFile] = useState<File | null>(null);
+  const [batchProgress, setBatchProgress] = useState<{current: number, total: number} | null>(null);
+  const [batchLogs, setBatchLogs] = useState<string[]>([]);
 
   useEffect(() => {
     const saved = localStorage.getItem('icon-history');
@@ -30,7 +80,6 @@ const App: React.FC = () => {
         setHistory(JSON.parse(saved));
       } catch (e) {
         console.error("Failed to parse history", e);
-        // If data is corrupt, clear it
         localStorage.removeItem('icon-history');
       }
     }
@@ -38,11 +87,6 @@ const App: React.FC = () => {
 
   useEffect(() => {
     try {
-      // CRITICAL FIX: LocalStorage has a size limit (usually 5MB).
-      // Storing base64 raster images will crash the app very quickly.
-      // We strip 'rasterImage' from the data before saving to persistence.
-      // The user keeps rasterImage for the current session in memory, but it's lost on reload.
-      // This is a necessary trade-off to allow unlimited SVG history.
       const optimizedHistory = history.map(icon => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { rasterImage, ...rest } = icon;
@@ -51,8 +95,7 @@ const App: React.FC = () => {
       
       localStorage.setItem('icon-history', JSON.stringify(optimizedHistory));
     } catch (e) {
-      console.error("Failed to save to localStorage (likely quota exceeded):", e);
-      // If we still fail (e.g. thousands of SVGs), we try to keep just the last 20
+      console.error("Failed to save to localStorage:", e);
       if (history.length > 20) {
          try {
             const trimmed = history.slice(0, 20).map(icon => {
@@ -62,13 +105,38 @@ const App: React.FC = () => {
             });
             localStorage.setItem('icon-history', JSON.stringify(trimmed));
          } catch (retryError) {
-             console.error("Critical storage failure even after trimming", retryError);
+             console.error("Critical storage failure", retryError);
          }
       }
     }
   }, [history]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Core generation logic reused by both modes
+  const processGeneration = async (name: string, desc: string): Promise<GeneratedIcon> => {
+    // Step 1: Generate Image
+    const result = await generateIcon(name, desc, (status) => {
+      // Only update global loading text if in single mode
+      if (mode === 'single') setLoadingText(status);
+    }, selectedStyle);
+
+    if (!result.rasterImage) {
+      throw new Error("No image generated.");
+    }
+
+    // Step 2: Trace
+    if (mode === 'single') setLoadingText('Tracing Vectors...');
+    const svgContent = await traceImageToSvg(result.rasterImage);
+    
+    return {
+      id: crypto.randomUUID(),
+      name: result.name || name,
+      svgContent: svgContent,
+      rasterImage: result.rasterImage,
+      createdAt: Date.now()
+    };
+  };
+
+  const handleSingleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!prompt.trim()) return;
 
@@ -77,28 +145,10 @@ const App: React.FC = () => {
     setError(null);
 
     try {
-      // Step 1: Generate the Image via Gemini
-      const result = await generateIcon(prompt, description, (status) => {
-          setLoadingText(status);
-      });
-
-      if (!result.rasterImage) {
-        throw new Error("No image generated to trace.");
-      }
-
-      // Step 2: Trace the image locally using ImageTracerJS
-      setLoadingText('Tracing Vectors...');
-      const svgContent = await traceImageToSvg(result.rasterImage);
-      
-      const newIcon: GeneratedIcon = {
-        id: crypto.randomUUID(),
-        name: result.name || prompt,
-        svgContent: svgContent,
-        rasterImage: result.rasterImage, // Kept in memory for this session
-        createdAt: Date.now()
-      };
-
+      const newIcon = await processGeneration(prompt, description);
       setHistory(prev => [newIcon, ...prev]);
+      setPrompt(''); // Clear input on success
+      setDescription('');
     } catch (err: any) {
       setError("Failed to generate icon. " + (err.message || ''));
       console.error(err);
@@ -108,12 +158,181 @@ const App: React.FC = () => {
     }
   };
 
+  // --- Batch Logic ---
+
+  const downloadTemplate = () => {
+    const headers = "Icon Name,Details (Optional)\n";
+    const rows = "Rocket,A simple rocket ship taking off\nLeaf,A minimal oak leaf\nSettings,A gear icon";
+    const content = headers + rows;
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "icon_template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setBatchFile(e.target.files[0]);
+      setError(null);
+    }
+  };
+
+  const parseCSV = async (file: File): Promise<{name: string, desc: string}[]> => {
+    const text = await file.text();
+    const lines = text.split(/\r\n|\n/);
+    const items: {name: string, desc: string}[] = [];
+
+    // Simple parser: assumes header is row 0
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      
+      const parts = line.split(',');
+      const name = parts[0]?.trim();
+      const desc = parts.slice(1).join(',')?.trim() || "";
+
+      if (name) {
+        items.push({ name, desc });
+      }
+    }
+    return items;
+  };
+
+  const handleBatchSubmit = async () => {
+    if (!batchFile) {
+      setError("Please upload a CSV file first.");
+      return;
+    }
+
+    setLoading(true);
+    setBatchLogs([]);
+    setError(null);
+
+    try {
+      const items = await parseCSV(batchFile);
+      if (items.length === 0) {
+        throw new Error("No valid rows found in CSV.");
+      }
+      
+      setBatchProgress({ current: 0, total: items.length });
+      
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        setBatchProgress({ current: i + 1, total: items.length });
+        setBatchLogs(prev => [`Generating "${item.name}" (${selectedStyle})...`, ...prev]);
+
+        try {
+          const newIcon = await processGeneration(item.name, item.desc);
+          setHistory(prev => [newIcon, ...prev]);
+          setBatchLogs(prev => [`✓ Success: "${item.name}"`, ...prev]);
+        } catch (err) {
+          console.error(err);
+          setBatchLogs(prev => [`✕ Failed: "${item.name}"`, ...prev]);
+        }
+
+        if (i < items.length - 1) {
+          setBatchLogs(prev => [`⏳ Cooling down (5s) for API limits...`, ...prev]);
+          await delay(5000); 
+        }
+      }
+
+      setBatchLogs(prev => [`🎉 Batch Complete!`, ...prev]);
+
+    } catch (err: any) {
+      setError("Batch failed: " + err.message);
+    } finally {
+      setLoading(false);
+      setBatchProgress(null);
+    }
+  };
+
+  const handleDownloadZip = async () => {
+    if (history.length === 0) return;
+    setZipping(true);
+    try {
+      const zip = new JSZip();
+      const folder = zip.folder("lucidgen-icons");
+      
+      const usedNames: Record<string, number> = {};
+
+      history.forEach((icon) => {
+         if (icon.svgContent) {
+           let baseName = icon.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'icon';
+           if (usedNames[baseName]) {
+              usedNames[baseName]++;
+              baseName = `${baseName}-${usedNames[baseName]}`;
+           } else {
+              usedNames[baseName] = 1;
+           }
+           folder?.file(`${baseName}.svg`, icon.svgContent);
+         }
+      });
+
+      const content = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(content);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "lucidgen-icons.zip";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Zip failed", e);
+      setError("Failed to create zip file.");
+    } finally {
+      setZipping(false);
+    }
+  };
+
   const clearHistory = () => {
-    // Removed window.confirm to ensure it works in all environments
-    // and to fix the "button doesn't work" issue.
     setHistory([]);
     localStorage.removeItem('icon-history');
   };
+
+  const StyleSelector = () => (
+    <div>
+      <label htmlFor="styleSelect" className="block text-sm font-medium text-slate-400 mb-1">
+        Icon Style
+      </label>
+      <div className="relative">
+        <select
+          id="styleSelect"
+          value={selectedStyle}
+          onChange={(e) => setSelectedStyle(e.target.value as IconStyle)}
+          className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-3 pr-10 py-2 text-white appearance-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all cursor-pointer"
+          disabled={loading}
+        >
+          {STYLES.map((style, index) => {
+             // Basic grouping logic by rendering a disabled option as a header if the group changes
+             const prevGroup = index > 0 ? STYLES[index - 1].group : null;
+             const isNewGroup = prevGroup !== style.group;
+             
+             // Since standard <select> groups are <optgroup>, let's just do that proper way
+             return null;
+          })}
+          
+          {/* Grouping Implementation */}
+          {[...new Set(STYLES.map(s => s.group))].map(group => (
+            <optgroup key={group} label={group} className="bg-slate-900 text-slate-400 font-semibold">
+              {STYLES.filter(s => s.group === group).map(style => (
+                 <option key={style.value} value={style.value} className="text-white">
+                    {style.label}
+                 </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+          <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-background text-slate-200 selection:bg-indigo-500/30">
@@ -138,70 +357,159 @@ const App: React.FC = () => {
         {/* Generator Section */}
         <div className="flex flex-col md:flex-row gap-8 mb-12">
           
-          {/* Input Form */}
+          {/* Input Panel */}
           <div className="w-full md:w-1/3 flex flex-col gap-6">
-            <div className="bg-surface p-6 rounded-xl border border-slate-700 shadow-xl">
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
-                New Icon
-              </h2>
+            <div className="bg-surface rounded-xl border border-slate-700 shadow-xl overflow-hidden">
               
-              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                <div>
-                  <label htmlFor="iconName" className="block text-sm font-medium text-slate-400 mb-1">
-                    Icon Name <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    id="iconName"
-                    type="text"
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="e.g., Coffee Cup"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white placeholder-slate-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                    required
-                  />
-                </div>
+              {/* Tabs */}
+              <div className="flex border-b border-slate-700">
+                <button 
+                  onClick={() => { setMode('single'); setError(null); }}
+                  className={`flex-1 py-3 text-sm font-medium transition-colors ${mode === 'single' ? 'bg-slate-800 text-white' : 'bg-slate-900 text-slate-400 hover:text-slate-200'}`}
+                >
+                  Single Icon
+                </button>
+                <button 
+                  onClick={() => { setMode('batch'); setError(null); }}
+                  className={`flex-1 py-3 text-sm font-medium transition-colors ${mode === 'batch' ? 'bg-slate-800 text-white' : 'bg-slate-900 text-slate-400 hover:text-slate-200'}`}
+                >
+                  Batch Upload
+                </button>
+              </div>
 
-                <div>
-                  <label htmlFor="iconDesc" className="block text-sm font-medium text-slate-400 mb-1">
-                    Details (Optional)
-                  </label>
-                  <textarea
-                    id="iconDesc"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="e.g., Simple silhouette of a cup with steam"
-                    rows={3}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white placeholder-slate-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all resize-none"
-                  />
-                </div>
+              <div className="p-6">
+                {mode === 'single' ? (
+                  <form onSubmit={handleSingleSubmit} className="flex flex-col gap-4">
+                    <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+                      New Icon
+                    </h2>
+                    
+                    <StyleSelector />
 
-                {error && (
-                  <div className="p-3 bg-red-900/20 border border-red-900/50 rounded-lg text-red-200 text-sm">
-                    {error}
+                    <div>
+                      <label htmlFor="iconName" className="block text-sm font-medium text-slate-400 mb-1">
+                        Icon Name <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        id="iconName"
+                        type="text"
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        placeholder="e.g., Coffee Cup"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white placeholder-slate-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="iconDesc" className="block text-sm font-medium text-slate-400 mb-1">
+                        Details (Optional)
+                      </label>
+                      <textarea
+                        id="iconDesc"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="e.g., Simple silhouette of a cup with steam"
+                        rows={3}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white placeholder-slate-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all resize-none"
+                        disabled={loading}
+                      />
+                    </div>
+
+                    <Button type="submit" isLoading={loading} className="w-full mt-2 shadow-lg shadow-indigo-500/20">
+                        {loading ? (
+                            <span className="flex items-center gap-2">
+                            <svg className="animate-spin h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            {loadingText}
+                            </span>
+                        ) : "Generate & Trace"}
+                    </Button>
+                  </form>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                     <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
+                      Batch Generator
+                    </h2>
+
+                    <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-3 text-xs text-indigo-200">
+                      Upload a CSV file to generate multiple icons automatically.
+                    </div>
+
+                    <StyleSelector />
+
+                    <div className="space-y-3">
+                      <label className="block text-sm font-medium text-slate-400">Step 1: Get Template</label>
+                      <Button variant="secondary" onClick={downloadTemplate} className="w-full text-xs h-9">
+                         Download CSV Template
+                      </Button>
+                    </div>
+
+                    <div className="space-y-3">
+                      <label className="block text-sm font-medium text-slate-400">Step 2: Upload CSV</label>
+                      <input 
+                        type="file" 
+                        accept=".csv"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-700 file:text-slate-200 hover:file:bg-slate-600 cursor-pointer"
+                        disabled={loading}
+                      />
+                    </div>
+
+                    {batchFile && (
+                       <div className="text-xs text-green-400 font-mono flex items-center gap-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                          {batchFile.name} ready
+                       </div>
+                    )}
+
+                    <Button 
+                      onClick={handleBatchSubmit} 
+                      disabled={!batchFile || loading}
+                      isLoading={loading} 
+                      className="w-full mt-2 shadow-lg shadow-indigo-500/20"
+                    >
+                        {loading ? (
+                          <span className="flex items-center gap-2">
+                             Processing... {batchProgress ? `(${batchProgress.current}/${batchProgress.total})` : ''}
+                          </span>
+                        ) : "Start Batch Process"}
+                    </Button>
                   </div>
                 )}
 
-                <Button type="submit" isLoading={loading} className="w-full mt-2 shadow-lg shadow-indigo-500/20">
-                    {loading ? (
-                        <span className="flex items-center gap-2">
-                        <svg className="animate-spin h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        {loadingText}
-                        </span>
-                    ) : "Generate & Trace"}
-                </Button>
-              </form>
+                {/* Error Display */}
+                {error && (
+                  <div className="mt-4 p-3 bg-red-900/20 border border-red-900/50 rounded-lg text-red-200 text-sm">
+                    {error}
+                  </div>
+                )}
+                
+                {/* Batch Logs */}
+                {mode === 'batch' && batchLogs.length > 0 && (
+                   <div className="mt-4 bg-slate-950 rounded-lg border border-slate-800 p-3 h-32 overflow-y-auto text-xs font-mono text-slate-400">
+                      {batchLogs.map((log, i) => (
+                        <div key={i} className="mb-1 border-b border-slate-800/50 pb-1 last:border-0">{log}</div>
+                      ))}
+                   </div>
+                )}
+              </div>
             </div>
 
             <div className="bg-surface/50 p-6 rounded-xl border border-slate-700/50 text-sm text-slate-400">
-               <h3 className="font-semibold text-slate-300 mb-2">Hybrid Workflow:</h3>
-               <ol className="list-decimal pl-4 space-y-2">
-                 <li><strong>Visual Generation:</strong> Gemini creates a high-contrast black/white silhouette.</li>
-                 <li><strong>Vector Tracing:</strong> ImageTracer.js converts the image into editable SVG paths (filled shapes) directly in your browser.</li>
-               </ol>
+               <h3 className="font-semibold text-slate-300 mb-2">Workflow Info:</h3>
+               <ul className="list-disc pl-4 space-y-2">
+                 <li><strong>Standard:</strong> Instant generation & tracing.</li>
+                 <li><strong>Batch:</strong> Processes one by one with a 5s delay between items to respect API limits.</li>
+                 <li><strong>Styles:</strong> Apply to all batch items.</li>
+                 <li><strong>Privacy:</strong> Files are processed locally in your browser.</li>
+               </ul>
             </div>
           </div>
 
@@ -210,7 +518,9 @@ const App: React.FC = () => {
              {history.length > 0 ? (
                 <div className="h-full flex flex-col">
                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-lg font-semibold text-white">Latest Result</h2>
+                      <h2 className="text-lg font-semibold text-white">
+                        {loading && mode === 'batch' ? 'Processing Batch...' : 'Latest Result'}
+                      </h2>
                    </div>
                    <div className="flex-1">
                       <GeneratedIconCard icon={history[0]} />
@@ -223,7 +533,7 @@ const App: React.FC = () => {
                         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
                      </div>
                      <h3 className="text-lg font-medium text-slate-300">No icons yet</h3>
-                     <p className="text-slate-500 mt-2">Enter a name and description. We'll generate an image and trace it to SVG instantly.</p>
+                     <p className="text-slate-500 mt-2">Enter a name or upload a CSV. We'll generate images and trace them to SVG.</p>
                    </div>
                 </div>
              )}
@@ -235,9 +545,24 @@ const App: React.FC = () => {
           <div className="mt-16 border-t border-slate-800 pt-8">
             <div className="flex items-center justify-between mb-6">
                <h2 className="text-xl font-bold text-white">Previous Generations</h2>
-               <Button variant="ghost" onClick={clearHistory} className="text-xs hover:bg-red-900/20 hover:text-red-300">
-                 Clear History
-               </Button>
+               <div className="flex gap-2">
+                  <Button variant="secondary" onClick={handleDownloadZip} disabled={zipping} className="text-xs h-8">
+                    {zipping ? (
+                        <span className="flex items-center gap-1">
+                            <svg className="animate-spin h-3 w-3 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            Zipping...
+                        </span>
+                    ) : (
+                        <span className="flex items-center gap-1">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                             Download All (ZIP)
+                        </span>
+                    )}
+                  </Button>
+                  <Button variant="ghost" onClick={clearHistory} className="text-xs h-8 hover:bg-red-900/20 hover:text-red-300">
+                    Clear History
+                  </Button>
+               </div>
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
