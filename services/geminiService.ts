@@ -7,7 +7,7 @@ export type IconStyle =
   // Base
   | 'lucid' 
   // 3D
-  | 'photorealistic' | 'clay_3d' | 'low_poly' | 'glossy_3d' | 'rubber_3d' 
+  | 'photorealistic' | 'clay_3d' | 'low_poly' | 'glossy_3d' | 'isometric_3d' 
   | 'metallic_3d' | 'glass_3d' | 'voxel_3d' | 'balloon_3d' | 'liquid_3d'
   // Modern Professional 2D
   | 'material' | 'fluent' | 'logo_mark' | 'corporate' | 'startup' 
@@ -16,8 +16,11 @@ export type IconStyle =
   | 'crayon' | 'ink_sketch' | 'doodle' | 'comic' | 'chalk' | 'marker'
   // Abstract & Artistic
   | 'geometric' | 'fluid' | 'glitch' | 'single_line' | 'splatter' | 'negative_space'
-  // Legacy / Specific Art Movements (Keeping high-value ones)
-  | 'bauhaus' | 'art_deco' | 'brutalist' | 'mid_century' | 'cyberpunk' | 'pixel' | 'steampunk' | 'gothic';
+  // Legacy / Specific Art Movements (User Requested List)
+  | 'bauhaus' | 'swiss' | 'art_deco' | 'brutalist' | 'mid_century' 
+  | 'japanese' | 'cyberpunk' | 'sketch' | 'art_nouveau' | 'de_stijl' 
+  | 'pixel' | 'tribal' | 'origami' | 'stencil' | 'victorian' 
+  | 'pop_art' | 'steampunk' | 'gothic';
 
 const STYLE_PROMPTS: Record<IconStyle, string> = {
   // --- BASE ---
@@ -30,39 +33,39 @@ const STYLE_PROMPTS: Record<IconStyle, string> = {
 
   // --- 3D STYLES (Simulated in B&W) ---
   photorealistic: `
-    Style: Photorealistic 3D Rendering (Black & White).
-    - Visuals: Highly detailed shading, realistic lighting simulation.
-    - Technique: Use fine hatching or stippling to represent greyscale depth using only pure black ink.
-    - Vibe: Premium, cinema-quality, depth.
+    Style: Photorealistic 3D / Engraving style.
+    - Visuals: Detailed lighting simulation using lines.
+    - Technique: Use woodcut-style hatching or engraved lines to represent shading. Do not use gradients.
+    - Vibe: Premium, detailed, classic 3D.
   `,
   clay_3d: `
     Style: Smooth Clay 3D (Soft Monochrome).
     - Visuals: Soft, rounded, organic forms.
-    - Technique: Smooth shadows represented by solid black soft shapes. Low detail, high volume.
+    - Technique: Thick, soft black outlines. Use blob-like black shadows to indicate depth.
     - Vibe: Friendly, tactile, modern.
   `,
   low_poly: `
-    Style: Low Poly 3D.
+    Style: Low Poly 3D (Wireframe/Faceted).
     - Visuals: Faceted geometric triangles, angular meshes.
-    - Technique: High contrast shading on facets. Sharp edges.
+    - Technique: CRITICAL: Draw black outlines for EVERY edge of the polygons. Do not use solid fills. It must look like a wireframe or stained glass.
     - Vibe: Digital, structural, modern gaming.
   `,
   glossy_3d: `
     Style: Glossy Plastic 3D.
     - Visuals: Shiny surfaces, distinct specular highlights.
-    - Technique: Large white negative space highlights against black curved surfaces.
+    - Technique: Black surfaces with large, sharp WHITE shapes to represent reflection. High contrast light and dark.
     - Vibe: Toy-like, sleek, modern.
   `,
-  rubber_3d: `
-    Style: Soft Rubber 3D.
-    - Visuals: Matte finish, rounded edges, squishy appearance.
-    - Technique: Soft ambient occlusion shadows, thick rounded outlines.
-    - Vibe: Playful, flexible, safe.
+  isometric_3d: `
+    Style: Isometric 3D (Line Art).
+    - Visuals: 30-degree angles, dimensional structures, cubes, spatial depth.
+    - Technique: Uniform line weight, clean technical drawing.
+    - Vibe: Structural, engineering, precise.
   `,
   metallic_3d: `
     Style: Metallic 3D.
     - Visuals: Chrome/Brushed Metal.
-    - Technique: High contrast horizon lines, sharp reflections.
+    - Technique: High contrast horizon lines. Use bands of black and white to simulate cylindrical reflections.
     - Vibe: Industrial, premium, strong.
   `,
   glass_3d: `
@@ -72,15 +75,15 @@ const STYLE_PROMPTS: Record<IconStyle, string> = {
     - Vibe: Airy, light, futuristic.
   `,
   voxel_3d: `
-    Style: Voxel Cubic 3D.
-    - Visuals: Constructed from 3D cubes (Minecraft style).
-    - Technique: Isometric grid alignment, blocky shading.
+    Style: Voxel Cubic 3D (Outlined).
+    - Visuals: Stacked 3D cubes (Minecraft style).
+    - Technique: Draw THICK BLACK OUTLINES for every individual cube. Distinct separation between blocks is required.
     - Vibe: Digital construction, retro-3D.
   `,
   balloon_3d: `
     Style: Inflated Balloon 3D.
     - Visuals: Puffy, tight seams, high internal pressure.
-    - Technique: Round forms with pinch points and strong specular highlights.
+    - Technique: Round forms with pinch points. Use white circular highlights on black forms to show gloss.
     - Vibe: Party, light, pop.
   `,
   liquid_3d: `
@@ -148,10 +151,16 @@ const STYLE_PROMPTS: Record<IconStyle, string> = {
     - Vibe: Innocent, playful, raw.
   `,
   ink_sketch: `
-    Style: Ink Sketch.
+    Style: Ink Sketch (Legacy).
     - Visuals: Fast pen strokes, varying line width.
     - Technique: Loose gestural lines, ink bleed effect, imperfections.
     - Vibe: Human, artisanal, brainstorming.
+  `,
+  sketch: `
+    Style: Hand-Drawn / Ink Sketch.
+    - Visuals: Imperfect, organic, variable width lines.
+    - Technique: Slightly wobbly (wabi-sabi) lines.
+    - Vibe: Artisanal, casual.
   `,
   doodle: `
     Style: Notebook Doodle.
@@ -160,10 +169,16 @@ const STYLE_PROMPTS: Record<IconStyle, string> = {
     - Vibe: Informal, creative, rough.
   `,
   comic: `
-    Style: Comic Book / Pop.
+    Style: Comic Book / Pop (Legacy).
     - Visuals: Dynamic, bold.
     - Technique: Heavy outlines, "Kirby dots" or speed lines for energy.
     - Vibe: Action, energetic, story.
+  `,
+  pop_art: `
+    Style: Pop Art.
+    - Visuals: Comic book style, high contrast, dynamic explosive shapes.
+    - Technique: Very thick outlines.
+    - Vibe: Energetic, loud.
   `,
   chalk: `
     Style: Chalk Texture.
@@ -216,45 +231,95 @@ const STYLE_PROMPTS: Record<IconStyle, string> = {
     - Vibe: Clever, bold, high contrast.
   `,
 
-  // --- LEGACY / MOVEMENTS ---
+  // --- ART MOVEMENTS & THEMATIC (User Requested List) ---
   bauhaus: `
-    Style: Bauhaus.
-    - Visuals: Geometric primitives, asymmetry.
-    - Vibe: Architectural, German modernism.
+    Style: Bauhaus / Constructivist.
+    - Visuals: Basic geometric primitives (circles, squares, triangles), asymmetrical balance.
+    - Technique: Mix of heavy blocks and fine lines.
+  `,
+  swiss: `
+    Style: Swiss International Style.
+    - Visuals: Grid-based, mathematical, right angles, perfect circles.
+    - Technique: Very heavy bold strokes.
+    - Vibe: Corporate, reliable.
   `,
   art_deco: `
-    Style: Art Deco.
-    - Visuals: Sunbursts, parallel lines, geometric ornamentation.
-    - Vibe: Luxury, retro-future.
+    Style: Art Deco / Streamline Moderne.
+    - Visuals: Sunburst motifs, parallelism, symmetrical, elegant curves.
+    - Technique: Thick/thin parallel lines.
+    - Vibe: Sophisticated, luxury.
   `,
   brutalist: `
-    Style: Brutalist.
-    - Visuals: Raw, blocky, anti-design.
-    - Vibe: Strong, aggressive.
+    Style: Brutalist / Neo-Brutalist.
+    - Visuals: Raw, unpolished, exaggerated proportions, bold shadows.
+    - Technique: Thick jagged/blocky lines.
+    - Vibe: Aggressive, web3.
   `,
   mid_century: `
-    Style: Mid-Century Modern.
-    - Visuals: Atomic age, starbursts, kidney shapes.
-    - Vibe: 1950s retro.
+    Style: Mid-Century Modern (Atomic Age).
+    - Visuals: Organic kidney shapes, starbursts, boomerangs, fluid rhythmic lines.
+    - Vibe: 1950s optimism.
+  `,
+  japanese: `
+    Style: Japanese Minimalist (Hanko/Brush).
+    - Visuals: Zen simplicity, negative space.
+    - Technique: Sumi-e brush strokes OR precise Kamon crest design.
   `,
   cyberpunk: `
-    Style: Cyberpunk.
-    - Visuals: Circuitry, angular, high-tech.
-    - Vibe: Dystopian, future.
+    Style: Cyberpunk / Tech Interface.
+    - Visuals: Circuitry patterns, glitches, data points, angular 45-degree cuts.
+    - Vibe: Dystopian, high-tech.
+  `,
+  art_nouveau: `
+    Style: Art Nouveau (Jugendstil).
+    - Visuals: Flowing organic lines, whiplash curves, plant-like forms.
+    - Technique: Sinuous varying thickness.
+    - Vibe: Natural, romantic.
+  `,
+  de_stijl: `
+    Style: De Stijl / Neoplasticism.
+    - Visuals: Strictly horizontal/vertical lines, rectangular blocks.
+    - Technique: Thick black grids.
+    - Vibe: Order, harmony.
   `,
   pixel: `
-    Style: Pixel Art (8-bit).
-    - Visuals: Grid-based squares.
+    Style: Pixel Art / 8-Bit.
+    - Visuals: Low-resolution digital aesthetic, stepped edges.
+    - Technique: Blocky, grid-aligned squares.
     - Vibe: Retro gaming.
   `,
+  tribal: `
+    Style: Tribal / Aztec Geometric.
+    - Visuals: Indigenous patterns, steps, repetitive motifs.
+    - Technique: Bold angular lines, diamonds/triangles/stairs.
+  `,
+  origami: `
+    Style: Origami / Paper Fold.
+    - Visuals: Faceted planes, sharp creases, polygons.
+    - Technique: Angular straight lines.
+    - Vibe: Sharp, precise.
+  `,
+  stencil: `
+    Style: Industrial Stencil.
+    - Visuals: Spray-paint aesthetic.
+    - Technique: Broken lines (bridges), thick disconnected segments.
+    - Vibe: Urban, industrial.
+  `,
+  victorian: `
+    Style: Victorian / Woodcut.
+    - Visuals: Etching style, intricate fine engraved look.
+    - Technique: Hatching lines for shading.
+    - Vibe: Classic, vintage scientific.
+  `,
   steampunk: `
-    Style: Steampunk.
-    - Visuals: Gears, brass aesthetic (in B&W), victorian tech.
-    - Vibe: Mechanical, retro-sci-fi.
+    Style: Steampunk / Victorian Sci-Fi.
+    - Visuals: Gears, cogs, brass aesthetics, mechanical complexity.
+    - Technique: Detailed ornamental lines.
   `,
   gothic: `
-    Style: Gothic.
-    - Visuals: Sharp arches, blackletter influence.
+    Style: Gothic / Blackletter.
+    - Visuals: Sharp arches, spikes, dense detail, calligraphy influence.
+    - Technique: Angular vertical stress.
     - Vibe: Dark, medieval.
   `
 };
@@ -272,6 +337,7 @@ export const generateIcon = async (
     // Step 1: Generate High-Contrast Raster Image
     const imageModel = "gemini-2.5-flash-image";
     
+    // Fallback to lucid if style not found
     const styleInstruction = STYLE_PROMPTS[style] || STYLE_PROMPTS['lucid'];
 
     // Updated prompt: Explicitly request an image at the start to prevent text-only responses
@@ -292,6 +358,7 @@ export const generateIcon = async (
       - Shapes must be solid and distinct.
       - Centered composition.
       - High contrast.
+      - If style is 3D, ensure outlines are black and inner volumes are white or clearly separated.
     `;
 
     const imageResponse = await ai.models.generateContent({
