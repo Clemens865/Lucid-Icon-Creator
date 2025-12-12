@@ -19,6 +19,12 @@ const STYLE_PROMPTS: Record<IconStyle, string> = {
     - Technique: Use woodcut-style hatching or engraved lines to represent shading. Do not use gradients.
     - Vibe: Premium, detailed, classic 3D.
   `,
+  photorealistic_angled: `
+    Style: Photorealistic 3D (Angled View).
+    - Visuals: Object shown in a 3/4 perspective or dynamic angle. Detailed lighting.
+    - Technique: Woodcut-style hatching or engraved lines to represent shading and depth. Deep contrast.
+    - Vibe: Cinematic, premium, classic 3D engraving.
+  `,
   clay_3d: `
     Style: Smooth Clay 3D (Soft Monochrome).
     - Visuals: Soft, rounded, organic forms.
@@ -42,6 +48,12 @@ const STYLE_PROMPTS: Record<IconStyle, string> = {
     - Visuals: 30-degree angles, dimensional structures, cubes, spatial depth.
     - Technique: Uniform line weight, clean technical drawing.
     - Vibe: Structural, engineering, precise.
+  `,
+  isometric_photoreal: `
+    Style: Photorealistic Isometric (45° Technical).
+    - Visuals: 45-degree high-angle orthographic projection.
+    - Technique: Extremely clean, fine, technical line art. Realistic proportions.
+    - Vibe: Architectural, product design, engineering, premium realism.
   `,
   metallic_3d: `
     Style: Metallic 3D.
