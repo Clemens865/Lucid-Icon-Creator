@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import JSZip from 'jszip';
-import { generateIcon, IconStyle } from './services/geminiService';
+import { generateIcon } from './services/geminiService';
 import { traceImageToSvg } from './services/vectorizerService';
-import { GeneratedIcon } from './types';
+import { GeneratedIcon, IconStyle } from './types';
 import { Button } from './components/Button';
 import { GeneratedIconCard } from './components/GeneratedIconCard';
 
@@ -159,6 +159,8 @@ const App: React.FC = () => {
     return {
       id: crypto.randomUUID(),
       name: result.name || name,
+      description: desc,
+      style: selectedStyle, // Save the style used
       svgContent: svgContent,
       rasterImage: result.rasterImage,
       createdAt: Date.now()
@@ -284,20 +286,32 @@ const App: React.FC = () => {
     setZipping(true);
     try {
       const zip = new JSZip();
-      const folder = zip.folder("lucidgen-icons");
+      const rootFolder = zip.folder("lucidgen-icons");
       
-      const usedNames: Record<string, number> = {};
+      // Track file names to avoid collisions within folders
+      const usedPaths: Record<string, number> = {};
 
       history.forEach((icon) => {
          if (icon.svgContent) {
-           let baseName = icon.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'icon';
-           if (usedNames[baseName]) {
-              usedNames[baseName]++;
-              baseName = `${baseName}-${usedNames[baseName]}`;
+           // Structure: /lucidgen-icons/[StyleName]/[IconName]_[Date].svg
+           const styleFolder = icon.style ? icon.style : 'misc';
+           const cleanName = icon.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'icon';
+           
+           // Use YYYY-MM-DD for sorting
+           const date = new Date(icon.createdAt).toISOString().split('T')[0];
+           
+           const baseName = `${cleanName}_${date}`;
+           let filePath = `${styleFolder}/${baseName}.svg`;
+
+           // Handle duplicates
+           if (usedPaths[filePath]) {
+              usedPaths[filePath]++;
+              filePath = `${styleFolder}/${baseName}-${usedPaths[filePath]}.svg`;
            } else {
-              usedNames[baseName] = 1;
+              usedPaths[filePath] = 1;
            }
-           folder?.file(`${baseName}.svg`, icon.svgContent);
+           
+           rootFolder?.file(filePath, icon.svgContent);
          }
       });
 

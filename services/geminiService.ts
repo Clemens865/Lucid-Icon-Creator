@@ -1,26 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
-import { GenerationResult } from "../types";
+import { GenerationResult, IconStyle } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-export type IconStyle = 
-  // Base
-  | 'lucid' 
-  // 3D
-  | 'photorealistic' | 'clay_3d' | 'low_poly' | 'glossy_3d' | 'isometric_3d' 
-  | 'metallic_3d' | 'glass_3d' | 'voxel_3d' | 'balloon_3d' | 'liquid_3d'
-  // Modern Professional 2D
-  | 'material' | 'fluent' | 'logo_mark' | 'corporate' | 'startup' 
-  | 'flat_25d' | 'duotone' | 'badge'
-  // Hand-Drawn & Organic
-  | 'crayon' | 'ink_sketch' | 'doodle' | 'comic' | 'chalk' | 'marker'
-  // Abstract & Artistic
-  | 'geometric' | 'fluid' | 'glitch' | 'single_line' | 'splatter' | 'negative_space'
-  // Legacy / Specific Art Movements (User Requested List)
-  | 'bauhaus' | 'swiss' | 'art_deco' | 'brutalist' | 'mid_century' 
-  | 'japanese' | 'cyberpunk' | 'sketch' | 'art_nouveau' | 'de_stijl' 
-  | 'pixel' | 'tribal' | 'origami' | 'stencil' | 'victorian' 
-  | 'pop_art' | 'steampunk' | 'gothic';
 
 const STYLE_PROMPTS: Record<IconStyle, string> = {
   // --- BASE ---

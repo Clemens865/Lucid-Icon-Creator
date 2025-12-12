@@ -53,7 +53,14 @@ export const GeneratedIconCard: React.FC<GeneratedIconCardProps> = ({ icon, clas
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${icon.name.toLowerCase().replace(/\s+/g, '-')}.svg`;
+    
+    // Naming Convention: [Style]_[IconName]_[YYYY-MM-DD].svg
+    const stylePrefix = icon.style ? `${icon.style}_` : '';
+    const dateSuffix = new Date(icon.createdAt).toISOString().split('T')[0];
+    const cleanName = icon.name.toLowerCase().replace(/\s+/g, '-');
+    
+    a.download = `${stylePrefix}${cleanName}_${dateSuffix}.svg`;
+    
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
