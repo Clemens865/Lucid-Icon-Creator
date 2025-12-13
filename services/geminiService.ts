@@ -49,11 +49,11 @@ const STYLE_PROMPTS: Record<IconStyle, string> = {
     - Technique: Uniform line weight, clean technical drawing.
     - Vibe: Structural, engineering, precise.
   `,
-  isometric_photoreal: `
-    Style: Photorealistic Isometric (45° Technical).
-    - Visuals: 45-degree high-angle orthographic projection.
-    - Technique: Extremely clean, fine, technical line art. Realistic proportions.
-    - Vibe: Architectural, product design, engineering, premium realism.
+  isometric_rounded: `
+    Style: Rounded Isometric 3D (45°).
+    - Visuals: 45-degree isometric view with smoothed, rounded edges.
+    - Technique: Clean vector lines, soft corners, friendly geometry.
+    - Vibe: Soft, modern, approachable 3D.
   `,
   metallic_3d: `
     Style: Metallic 3D.

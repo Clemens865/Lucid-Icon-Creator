@@ -2,7 +2,7 @@ export type IconStyle =
   // Base
   | 'lucid' 
   // 3D
-  | 'photorealistic' | 'photorealistic_angled' | 'clay_3d' | 'low_poly' | 'glossy_3d' | 'isometric_3d' | 'isometric_photoreal'
+  | 'photorealistic' | 'photorealistic_angled' | 'clay_3d' | 'low_poly' | 'glossy_3d' | 'isometric_3d' | 'isometric_rounded'
   | 'metallic_3d' | 'glass_3d' | 'voxel_3d' | 'balloon_3d' | 'liquid_3d'
   // Modern Professional 2D
   | 'material' | 'fluent' | 'logo_mark' | 'corporate' | 'startup' 

@@ -27,7 +27,7 @@ const STYLES: { value: IconStyle; label: string; group: string }[] = [
   { value: 'photorealistic', label: 'Photorealistic 3D', group: '3D Styles' },
   { value: 'photorealistic_angled', label: 'Photorealistic 3D (Angled)', group: '3D Styles' },
   { value: 'isometric_3d', label: 'Isometric 3D', group: '3D Styles' },
-  { value: 'isometric_photoreal', label: 'Photorealistic Isometric (45°)', group: '3D Styles' },
+  { value: 'isometric_rounded', label: 'Rounded Isometric (45°)', group: '3D Styles' },
   { value: 'clay_3d', label: 'Smooth Clay 3D', group: '3D Styles' },
   { value: 'low_poly', label: 'Low Poly 3D', group: '3D Styles' },
   { value: 'glossy_3d', label: 'Glossy Plastic 3D', group: '3D Styles' },
