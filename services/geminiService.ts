@@ -136,6 +136,38 @@ const STYLE_PROMPTS: Record<IconStyle, string> = {
     - Vibe: Official,verified, secure.
   `,
 
+  // --- FUN & COMIC ---
+  kawaii: `
+    Style: Kawaii / Cute Chibi.
+    - Visuals: Exaggerated rounded proportions, big heads (if character), small details.
+    - Technique: Soft rounded lines, minimal detail, often adding a simple face (eyes/mouth) to objects.
+    - Vibe: Adorable, soft, happy.
+  `,
+  retro_anime: `
+    Style: 90s Retro Anime / Manga.
+    - Visuals: Cel-shaded aesthetic, dramatic lighting shapes.
+    - Technique: Sharp, angular shadow blocks (solid black) against white highlights. Speed lines.
+    - Vibe: Nostalgic, action-oriented, distinct.
+  `,
+  sticker: `
+    Style: Die-Cut Sticker Art.
+    - Visuals: Looks like a physical sticker with a border.
+    - Technique: VERY THICK bold outer contour line (uniform weight). Simpler inner details.
+    - Vibe: Collectible, street, pop.
+  `,
+  comic: `
+    Style: Comic Book / Pop (Legacy).
+    - Visuals: Dynamic, bold.
+    - Technique: Heavy outlines, "Kirby dots" or speed lines for energy.
+    - Vibe: Action, energetic, story.
+  `,
+  pop_art: `
+    Style: Pop Art.
+    - Visuals: Comic book style, high contrast, dynamic explosive shapes.
+    - Technique: Very thick outlines.
+    - Vibe: Energetic, loud.
+  `,
+
   // --- HAND DRAWN & ORGANIC ---
   crayon: `
     Style: Kids Crayon Drawing.
@@ -160,18 +192,6 @@ const STYLE_PROMPTS: Record<IconStyle, string> = {
     - Visuals: Casual, loopy, ballpoint pen style.
     - Technique: Thin lines, multiple pass strokes, casual shading.
     - Vibe: Informal, creative, rough.
-  `,
-  comic: `
-    Style: Comic Book / Pop (Legacy).
-    - Visuals: Dynamic, bold.
-    - Technique: Heavy outlines, "Kirby dots" or speed lines for energy.
-    - Vibe: Action, energetic, story.
-  `,
-  pop_art: `
-    Style: Pop Art.
-    - Visuals: Comic book style, high contrast, dynamic explosive shapes.
-    - Technique: Very thick outlines.
-    - Vibe: Energetic, loud.
   `,
   chalk: `
     Style: Chalk Texture.

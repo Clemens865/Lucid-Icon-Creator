@@ -7,15 +7,17 @@ export type IconStyle =
   // Modern Professional 2D
   | 'material' | 'fluent' | 'logo_mark' | 'corporate' | 'startup' 
   | 'flat_25d' | 'duotone' | 'badge'
+  // Fun & Comic
+  | 'comic' | 'pop_art' | 'kawaii' | 'retro_anime' | 'sticker'
   // Hand-Drawn & Organic
-  | 'crayon' | 'ink_sketch' | 'doodle' | 'comic' | 'chalk' | 'marker'
+  | 'crayon' | 'ink_sketch' | 'doodle' | 'chalk' | 'marker'
   // Abstract & Artistic
   | 'geometric' | 'fluid' | 'glitch' | 'single_line' | 'splatter' | 'negative_space'
   // Legacy / Specific Art Movements (User Requested List)
   | 'bauhaus' | 'swiss' | 'art_deco' | 'brutalist' | 'mid_century' 
   | 'japanese' | 'cyberpunk' | 'sketch' | 'art_nouveau' | 'de_stijl' 
   | 'pixel' | 'tribal' | 'origami' | 'stencil' | 'victorian' 
-  | 'pop_art' | 'steampunk' | 'gothic';
+  | 'steampunk' | 'gothic';
 
 export interface IconRequest {
   name: string;

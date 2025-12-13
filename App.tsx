@@ -23,6 +23,13 @@ const STYLES: { value: IconStyle; label: string; group: string }[] = [
   // Default
   { value: 'lucid', label: 'Lucid (Default)', group: 'Essentials' },
 
+  // Fun & Comic (New)
+  { value: 'kawaii', label: 'Kawaii (Cute)', group: 'Fun & Comic' },
+  { value: 'sticker', label: 'Sticker Art', group: 'Fun & Comic' },
+  { value: 'retro_anime', label: 'Retro Anime (90s)', group: 'Fun & Comic' },
+  { value: 'comic', label: 'Comic Book', group: 'Fun & Comic' },
+  { value: 'pop_art', label: 'Pop Art', group: 'Fun & Comic' },
+
   // 3D Styles
   { value: 'photorealistic', label: 'Photorealistic 3D', group: '3D Styles' },
   { value: 'photorealistic_angled', label: 'Photorealistic 3D (Angled)', group: '3D Styles' },
@@ -51,7 +58,6 @@ const STYLES: { value: IconStyle; label: string; group: string }[] = [
   { value: 'sketch', label: 'Sketch (Hand-Drawn)', group: 'Hand-drawn & Organic' },
   { value: 'crayon', label: 'Kids Crayon Drawing', group: 'Hand-drawn & Organic' },
   { value: 'doodle', label: 'Doodle Style', group: 'Hand-drawn & Organic' },
-  { value: 'pop_art', label: 'Pop Art', group: 'Hand-drawn & Organic' },
   { value: 'chalk', label: 'Chalk Texture', group: 'Hand-drawn & Organic' },
   { value: 'marker', label: 'Marker Drawing', group: 'Hand-drawn & Organic' },
 
