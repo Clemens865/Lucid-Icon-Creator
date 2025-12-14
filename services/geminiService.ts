@@ -12,7 +12,7 @@ const STYLE_PROMPTS: Record<IconStyle, string> = {
     - Vibe: Clean, friendly, tech-forward, functional.
   `,
 
-  // --- 3D STYLES (Simulated in B&W) ---
+  // --- 3D STYLES ---
   photorealistic: `
     Style: Photorealistic 3D / Engraving style.
     - Visuals: Detailed lighting simulation using lines.
@@ -86,7 +86,7 @@ const STYLE_PROMPTS: Record<IconStyle, string> = {
     - Vibe: Surreal, artistic, fluid.
   `,
 
-  // --- MODERN PROFESSIONAL 2D ---
+  // --- LOGO & PROFESSIONAL ---
   material: `
     Style: Material Design (Google).
     - Visuals: Flat layers, paper-like physics.
@@ -117,6 +117,18 @@ const STYLE_PROMPTS: Record<IconStyle, string> = {
     - Technique: Bold strokes, simple composition, "Notion-style" simplicity.
     - Vibe: Modern, agile, digital.
   `,
+  mascot: `
+    Style: Esports Mascot Logo.
+    - Visuals: Aggressive, dynamic, character-based.
+    - Technique: Thick bold outer contours, sharp angular internal shading blocks.
+    - Vibe: Competitive, gaming, energetic.
+  `,
+  monogram: `
+    Style: Luxury Monogram / Interlocking.
+    - Visuals: Interwoven lines, letter-like geometric abstraction.
+    - Technique: Consistent stroke width, geometric weaving, symmetry.
+    - Vibe: High-end, sophisticated, brand-focused.
+  `,
   flat_25d: `
     Style: Flat 2.5D.
     - Visuals: Isometric perspective but flat colors.
@@ -133,7 +145,33 @@ const STYLE_PROMPTS: Record<IconStyle, string> = {
     Style: Outlined Badge / Emblem.
     - Visuals: Enclosed in a shape (circle, hexagon, shield).
     - Technique: Uniform stroke width, contained composition.
-    - Vibe: Official,verified, secure.
+    - Vibe: Official, verified, secure.
+  `,
+
+  // --- TECHNICAL & SCHEMATIC ---
+  blueprint: `
+    Style: Technical Blueprint / Schematic.
+    - Visuals: Engineering diagram look.
+    - Technique: Thin, precise lines. Include small dashed "construction lines" and dimension markers (arrows/ticks).
+    - Vibe: Precise, planned, industrial.
+  `,
+  architectural: `
+    Style: Architectural Sketch.
+    - Visuals: Draftsman concept drawing.
+    - Technique: Loose but straight lines, "corner overshoots" (lines crossing at vertices), perspective guide lines.
+    - Vibe: Creative, structural, visionary.
+  `,
+  circuit: `
+    Style: Printed Circuit Board (PCB).
+    - Visuals: Tech nodes, traces.
+    - Technique: Lines ending in circular pads/dots. 45-degree angle turns.
+    - Vibe: Hardware, electronic, connected.
+  `,
+  neon: `
+    Style: Neon Sign.
+    - Visuals: Glowing glass tubes.
+    - Technique: Double outlines (parallel lines) to represent the glass tube thickness. Rounded ends. Gaps for "connectors".
+    - Vibe: Nightlife, retro-tech, vibrant.
   `,
 
   // --- FUN & COMIC ---
@@ -142,6 +180,36 @@ const STYLE_PROMPTS: Record<IconStyle, string> = {
     - Visuals: Exaggerated rounded proportions, big heads (if character), small details.
     - Technique: Soft rounded lines, minimal detail, often adding a simple face (eyes/mouth) to objects.
     - Vibe: Adorable, soft, happy.
+  `,
+  classic_animation: `
+    Style: Classic Feature Animation (Disney Renaissance Style).
+    - Visuals: Smooth, flowing, appealing line art.
+    - Technique: Elegant tapered ink lines. Expressive shapes.
+    - Vibe: Magical, polished, cinematic.
+  `,
+  rubber_hose: `
+    Style: Vintage 1930s Cartoon (Rubber Hose).
+    - Visuals: Pie-cut eyes, noodle limbs, white gloves.
+    - Technique: Uniform thick black lines, bounce, no joints.
+    - Vibe: Retro, cheerful, jazzy.
+  `,
+  tv_cartoon: `
+    Style: Prime Time TV Cartoon (Simpsons/Groening Style).
+    - Visuals: Bulging eyes, overbites, distinct silhouettes.
+    - Technique: Clean uniform outlines, slightly crude but expressive.
+    - Vibe: Satirical, funny, familiar.
+  `,
+  superhero: `
+    Style: Modern Superhero Comic.
+    - Visuals: Dynamic action, dramatic heavy shadows (spot blacks).
+    - Technique: Varying line weights, detailed musculature/structure, hatching.
+    - Vibe: Epic, strong, intense.
+  `,
+  graffiti: `
+    Style: Graffiti / Street Art.
+    - Visuals: Bubble letters style, drips, arrows.
+    - Technique: Ultra thick outlines, overlapping shapes.
+    - Vibe: Urban, rebellious, cool.
   `,
   retro_anime: `
     Style: 90s Retro Anime / Manga.
@@ -166,6 +234,20 @@ const STYLE_PROMPTS: Record<IconStyle, string> = {
     - Visuals: Comic book style, high contrast, dynamic explosive shapes.
     - Technique: Very thick outlines.
     - Vibe: Energetic, loud.
+  `,
+
+  // --- CRAFT & TEXTURE ---
+  paper_cutout: `
+    Style: Paper Cutout Art.
+    - Visuals: Layered paper aesthetic.
+    - Technique: Shapes defined by sharp, solid black drop shadows to imply depth and layers.
+    - Vibe: Craft, tactile, depth.
+  `,
+  embroidery: `
+    Style: Embroidery / Stitch Patch.
+    - Visuals: Thread texture.
+    - Technique: Lines made of small dashed "stitches". Fabric-like cross-hatching.
+    - Vibe: Handmade, cozy, textured.
   `,
 
   // --- HAND DRAWN & ORGANIC ---
@@ -244,7 +326,7 @@ const STYLE_PROMPTS: Record<IconStyle, string> = {
     - Vibe: Clever, bold, high contrast.
   `,
 
-  // --- ART MOVEMENTS & THEMATIC (User Requested List) ---
+  // --- ART MOVEMENTS & THEMATIC ---
   bauhaus: `
     Style: Bauhaus / Constructivist.
     - Visuals: Basic geometric primitives (circles, squares, triangles), asymmetrical balance.
@@ -337,54 +419,26 @@ const STYLE_PROMPTS: Record<IconStyle, string> = {
   `
 };
 
-export const generateIcon = async (
-  name: string,
-  description?: string,
-  onStatusUpdate?: (status: string) => void,
-  style: IconStyle = 'lucid'
-): Promise<GenerationResult> => {
-  
-  try {
-    if (onStatusUpdate) onStatusUpdate(`Dreaming in ${style} style...`);
+// Helper to extract base64 from response
+const extractImage = (response: any): string => {
+    const candidate = response.candidates?.[0];
     
-    // Step 1: Generate High-Contrast Raster Image
-    const imageModel = "gemini-2.5-flash-image";
-    
-    // Fallback to lucid if style not found
-    const styleInstruction = STYLE_PROMPTS[style] || STYLE_PROMPTS['lucid'];
+    if (!candidate) {
+        throw new Error("Gemini API returned no candidates. This usually implies a filter block.");
+    }
 
-    // Updated prompt: Explicitly request an image at the start to prevent text-only responses
-    const imagePrompt = `
-      Generate an image of an icon.
-      
-      Requirements:
-      - Subject: ${name}
-      ${description ? `- Context/Metaphor: ${description}` : ""}
-      - Color: Strictly Black (#000000) on White (#FFFFFF) background. No greyscale, no gradients.
-      - Style: ${style}
-      
-      Style Details:
-      ${styleInstruction}
+    if (candidate.finishReason && candidate.finishReason !== "STOP") {
+        console.warn("Gemini finish reason:", candidate.finishReason);
+        if (!candidate.content) {
+             throw new Error(`Generation stopped. Reason: ${candidate.finishReason}`);
+        }
+    }
 
-      Constraints for Vector Tracing:
-      - No text, letters, or words.
-      - Shapes must be solid and distinct.
-      - Centered composition.
-      - High contrast.
-      - If style is 3D, ensure outlines are black and inner volumes are white or clearly separated.
-    `;
-
-    const imageResponse = await ai.models.generateContent({
-      model: imageModel,
-      contents: { parts: [{ text: imagePrompt }] },
-    });
-
-    // Extract the image from the response
     let base64Image: string | null = null;
     let mimeType: string = "image/png";
     let failureText = "";
 
-    const parts = imageResponse.candidates?.[0]?.content?.parts;
+    const parts = candidate.content?.parts;
     if (parts) {
       for (const part of parts) {
         if (part.inlineData) {
@@ -401,11 +455,54 @@ export const generateIcon = async (
       console.warn("Gemini returned text instead of image:", failureText);
       const errorMessage = failureText 
         ? `Model Refusal: ${failureText.slice(0, 200)}` 
-        : "Failed to generate visual reference (Empty response).";
+        : `Failed to generate image. Finish Reason: ${candidate.finishReason || 'Unknown'}`;
       throw new Error(errorMessage);
     }
 
-    const fullBase64 = `data:${mimeType};base64,${base64Image}`;
+    return `data:${mimeType};base64,${base64Image}`;
+}
+
+export const generateIcon = async (
+  name: string,
+  description?: string,
+  onStatusUpdate?: (status: string) => void,
+  style: IconStyle = 'lucid'
+): Promise<GenerationResult> => {
+  
+  try {
+    if (onStatusUpdate) onStatusUpdate(`Dreaming in ${style} style...`);
+    
+    // Step 1: Generate High-Contrast Raster Image
+    const imageModel = "gemini-2.5-flash-image";
+    
+    // Fallback to lucid if style not found
+    const styleInstruction = STYLE_PROMPTS[style] || STYLE_PROMPTS['lucid'];
+
+    // Updated prompt: Hardened to prevent conversational text and force image output
+    const imagePrompt = `
+      Create an image of an icon.
+      
+      Request:
+      - Icon Name: ${name}
+      ${description ? `- Description: ${description}` : ""}
+      - Style: ${style}
+      
+      Visual Style Definition:
+      ${styleInstruction}
+
+      Strict Constraints:
+      1. RETURN AN IMAGE ONLY. Do not generate conversation, intro text, or descriptions.
+      2. Color: Black (#000000) lines/shapes on White (#FFFFFF) background.
+      3. No gradients, no greyscale, no text characters inside the image.
+      4. Centered, high contrast, solid shapes.
+    `;
+
+    const imageResponse = await ai.models.generateContent({
+      model: imageModel,
+      contents: { parts: [{ text: imagePrompt }] },
+    });
+
+    const fullBase64 = extractImage(imageResponse);
 
     // Return just the image data. The App component will handle vectorization.
     return {
@@ -419,3 +516,78 @@ export const generateIcon = async (
     throw error;
   }
 };
+
+export const generateIconFromReference = async (
+    name: string,
+    description: string,
+    referenceImageBase64: string, // Raw base64 string
+    mimeType: string,
+    onStatusUpdate?: (status: string) => void,
+    style: IconStyle = 'lucid'
+  ): Promise<GenerationResult> => {
+      
+      try {
+        if (onStatusUpdate) onStatusUpdate(`Analyzing reference & applying ${style}...`);
+        
+        const imageModel = "gemini-2.5-flash-image";
+        const styleInstruction = STYLE_PROMPTS[style] || STYLE_PROMPTS['lucid'];
+    
+        const imagePrompt = `
+          Role: Expert Vector Illustrator.
+          
+          Task: Create a stylistic reinterpretation of the reference image.
+          Target Style: ${style}
+          Subject: ${name}
+          Context/Action: ${description}
+
+          CRITICAL STYLE OVERRIDE:
+          1. IGNORE the realistic textures, shading, and exact facial proportions of the reference photo.
+          2. CAPTURE ONLY the pose, composition, and key elements.
+          3. REDRAW everything from scratch using the specific visual rules of the "${style}" style.
+          
+          IF PEOPLE ARE PRESENT:
+          - Do NOT preserve their realistic likeness.
+          - You MUST caricaturize them to fit the "${style}".
+          - Example: If the style is "TV Cartoon" or "Simpsons", give them the specific eyes, jawlines, and body proportions of that show.
+          - Example: If the style is "Kawaii", make them cute with big heads and small bodies.
+          - Example: If the style is "Abstract", remove the face entirely or use simple shapes.
+
+          VISUAL STYLE RULES (STRICTLY APPLY):
+          ${styleInstruction}
+
+          OUTPUT REQUIREMENTS:
+          1. PURE Black & White (#000000 on #FFFFFF). No greyscale.
+          2. Flat vector illustration style (no gradients).
+          3. Clean lines, bold shapes.
+          4. RETURN IMAGE ONLY.
+        `;
+    
+        // Order changed: Image first, then prompt, to help model context.
+        const imageResponse = await ai.models.generateContent({
+          model: imageModel,
+          contents: {
+              parts: [
+                  { 
+                      inlineData: {
+                          mimeType: mimeType,
+                          data: referenceImageBase64
+                      }
+                  },
+                  { text: imagePrompt }
+              ]
+          },
+        });
+    
+        const fullBase64 = extractImage(imageResponse);
+    
+        return {
+          svg: "",
+          name: name,
+          rasterImage: fullBase64
+        };
+    
+      } catch (error) {
+        console.error("Photo transformation failed:", error);
+        throw error;
+      }
+  };

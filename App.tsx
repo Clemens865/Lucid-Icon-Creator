@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import JSZip from 'jszip';
-import { generateIcon } from './services/geminiService';
+import { generateIcon, generateIconFromReference } from './services/geminiService';
 import { traceImageToSvg } from './services/vectorizerService';
 import { GeneratedIcon, IconStyle } from './types';
 import { Button } from './components/Button';
@@ -23,12 +23,39 @@ const STYLES: { value: IconStyle; label: string; group: string }[] = [
   // Default
   { value: 'lucid', label: 'Lucid (Default)', group: 'Essentials' },
 
-  // Fun & Comic (New)
+  // Technical & Schematic (New)
+  { value: 'blueprint', label: 'Blueprint / Schematic', group: 'Technical & Schematic' },
+  { value: 'architectural', label: 'Architectural Sketch', group: 'Technical & Schematic' },
+  { value: 'circuit', label: 'Circuit Board (PCB)', group: 'Technical & Schematic' },
+  { value: 'neon', label: 'Neon Sign', group: 'Technical & Schematic' },
+
+  // Logo & Professional (Updated)
+  { value: 'logo_mark', label: 'Logo Mark', group: 'Logo & Professional' },
+  { value: 'mascot', label: 'Esports Mascot', group: 'Logo & Professional' },
+  { value: 'monogram', label: 'Luxury Monogram', group: 'Logo & Professional' },
+  { value: 'material', label: 'Material Design', group: 'Logo & Professional' },
+  { value: 'fluent', label: 'Fluent Design', group: 'Logo & Professional' },
+  { value: 'corporate', label: 'Corporate Minimal', group: 'Logo & Professional' },
+  { value: 'startup', label: 'Tech Startup', group: 'Logo & Professional' },
+  { value: 'flat_25d', label: 'Flat 2.5D', group: 'Logo & Professional' },
+  { value: 'duotone', label: 'Duotone Split', group: 'Logo & Professional' },
+  { value: 'badge', label: 'Outlined Badge', group: 'Logo & Professional' },
+
+  // Fun & Comic
   { value: 'kawaii', label: 'Kawaii (Cute)', group: 'Fun & Comic' },
+  { value: 'classic_animation', label: 'Classic Animation (Disney)', group: 'Fun & Comic' },
+  { value: 'rubber_hose', label: 'Vintage 1930s (Rubber Hose)', group: 'Fun & Comic' },
+  { value: 'tv_cartoon', label: 'TV Cartoon (Simpsons Style)', group: 'Fun & Comic' },
+  { value: 'superhero', label: 'Superhero Comic', group: 'Fun & Comic' },
+  { value: 'graffiti', label: 'Graffiti / Street Art', group: 'Fun & Comic' },
   { value: 'sticker', label: 'Sticker Art', group: 'Fun & Comic' },
   { value: 'retro_anime', label: 'Retro Anime (90s)', group: 'Fun & Comic' },
   { value: 'comic', label: 'Comic Book', group: 'Fun & Comic' },
   { value: 'pop_art', label: 'Pop Art', group: 'Fun & Comic' },
+
+  // Craft & Texture (New)
+  { value: 'paper_cutout', label: 'Paper Cutout Art', group: 'Craft & Texture' },
+  { value: 'embroidery', label: 'Embroidery / Stitch', group: 'Craft & Texture' },
 
   // 3D Styles
   { value: 'photorealistic', label: 'Photorealistic 3D', group: '3D Styles' },
@@ -43,16 +70,6 @@ const STYLES: { value: IconStyle; label: string; group: string }[] = [
   { value: 'voxel_3d', label: 'Voxel Cubic 3D', group: '3D Styles' },
   { value: 'balloon_3d', label: 'Inflated Balloon 3D', group: '3D Styles' },
   { value: 'liquid_3d', label: 'Melting Liquid 3D', group: '3D Styles' },
-
-  // Modern Professional 2D
-  { value: 'material', label: 'Material Design', group: 'Modern Professional' },
-  { value: 'fluent', label: 'Fluent Design', group: 'Modern Professional' },
-  { value: 'logo_mark', label: 'Logo Mark', group: 'Modern Professional' },
-  { value: 'corporate', label: 'Corporate Minimal', group: 'Modern Professional' },
-  { value: 'startup', label: 'Tech Startup', group: 'Modern Professional' },
-  { value: 'flat_25d', label: 'Flat 2.5D', group: 'Modern Professional' },
-  { value: 'duotone', label: 'Duotone Split', group: 'Modern Professional' },
-  { value: 'badge', label: 'Outlined Badge', group: 'Modern Professional' },
 
   // Hand-drawn & Organic
   { value: 'sketch', label: 'Sketch (Hand-Drawn)', group: 'Hand-drawn & Organic' },
@@ -96,7 +113,7 @@ const App: React.FC = () => {
   const [description, setDescription] = useState('');
   
   // UI State
-  const [mode, setMode] = useState<'single' | 'batch'>('single');
+  const [mode, setMode] = useState<'single' | 'batch' | 'photo'>('single');
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState('Generating...');
   const [zipping, setZipping] = useState(false);
@@ -109,6 +126,10 @@ const App: React.FC = () => {
   const [batchFile, setBatchFile] = useState<File | null>(null);
   const [batchProgress, setBatchProgress] = useState<{current: number, total: number} | null>(null);
   const [batchLogs, setBatchLogs] = useState<string[]>([]);
+
+  // Photo Mode State
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('icon-history');
@@ -147,6 +168,25 @@ const App: React.FC = () => {
       }
     }
   }, [history]);
+
+  // Helper to convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+          if (typeof reader.result === 'string') {
+               // Remove data header for API
+               const result = reader.result as string;
+               const base64 = result.split(',')[1]; 
+               resolve(base64);
+          } else {
+              reject(new Error("Failed to read file"));
+          }
+      };
+      reader.onerror = error => reject(error);
+    });
+  };
 
   // Core generation logic reused by both modes
   const processGeneration = async (name: string, desc: string): Promise<GeneratedIcon> => {
@@ -194,6 +234,68 @@ const App: React.FC = () => {
     } finally {
       setLoading(false);
       setLoadingText('Generating...');
+    }
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setPhotoFile(e.target.files[0]);
+      setError(null);
+    }
+  };
+
+  const handlePhotoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!photoFile || !prompt.trim()) return;
+
+    setLoading(true);
+    setLoadingText('Uploading...');
+    setError(null);
+
+    try {
+        const base64 = await fileToBase64(photoFile);
+        
+        // Step 1: Generate Transform
+        const result = await generateIconFromReference(
+            prompt, 
+            description, 
+            base64, 
+            photoFile.type,
+            (status) => setLoadingText(status),
+            selectedStyle
+        );
+
+        if (!result.rasterImage) {
+            throw new Error("No image generated.");
+        }
+
+        // Step 2: Trace
+        setLoadingText('Tracing Vectors...');
+        const svgContent = await traceImageToSvg(result.rasterImage);
+
+        const newIcon: GeneratedIcon = {
+            id: crypto.randomUUID(),
+            name: result.name || prompt,
+            description: description,
+            style: selectedStyle,
+            svgContent: svgContent,
+            rasterImage: result.rasterImage,
+            createdAt: Date.now()
+        };
+
+        setHistory(prev => [newIcon, ...prev]);
+        // Reset Inputs
+        setPrompt('');
+        setDescription('');
+        setPhotoFile(null);
+        if (photoInputRef.current) photoInputRef.current.value = '';
+
+    } catch (err: any) {
+        setError("Failed to transform photo. " + (err.message || ''));
+        console.error(err);
+    } finally {
+        setLoading(false);
+        setLoadingText('Generating...');
     }
   };
 
@@ -418,13 +520,19 @@ const App: React.FC = () => {
                   onClick={() => { setMode('single'); setError(null); }}
                   className={`flex-1 py-3 text-sm font-medium transition-colors ${mode === 'single' ? 'bg-slate-800 text-white' : 'bg-slate-900 text-slate-400 hover:text-slate-200'}`}
                 >
-                  Single Icon
+                  Single
                 </button>
                 <button 
                   onClick={() => { setMode('batch'); setError(null); }}
                   className={`flex-1 py-3 text-sm font-medium transition-colors ${mode === 'batch' ? 'bg-slate-800 text-white' : 'bg-slate-900 text-slate-400 hover:text-slate-200'}`}
                 >
-                  Batch Upload
+                  Batch
+                </button>
+                <button 
+                  onClick={() => { setMode('photo'); setError(null); }}
+                  className={`flex-1 py-3 text-sm font-medium transition-colors ${mode === 'photo' ? 'bg-slate-800 text-white' : 'bg-slate-900 text-slate-400 hover:text-slate-200'}`}
+                >
+                  Photo Transform
                 </button>
               </div>
 
@@ -481,7 +589,7 @@ const App: React.FC = () => {
                         ) : "Generate & Trace"}
                     </Button>
                   </form>
-                ) : (
+                ) : mode === 'batch' ? (
                   <div className="flex flex-col gap-4">
                      <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
@@ -533,6 +641,96 @@ const App: React.FC = () => {
                         ) : "Start Batch Process"}
                     </Button>
                   </div>
+                ) : (
+                    // Photo Transform Mode
+                    <form onSubmit={handlePhotoSubmit} className="flex flex-col gap-4">
+                        <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        Photo Transform
+                        </h2>
+
+                        <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-3 text-xs text-indigo-200">
+                            Upload a photo to restyle it into an icon or illustration.
+                        </div>
+                        
+                        <StyleSelector />
+
+                        <div>
+                        <label htmlFor="photoName" className="block text-sm font-medium text-slate-400 mb-1">
+                            Scene Name <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                            id="photoName"
+                            type="text"
+                            value={prompt}
+                            onChange={(e) => setPrompt(e.target.value)}
+                            placeholder="e.g., Two People"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white placeholder-slate-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                            required
+                            disabled={loading}
+                        />
+                        </div>
+
+                        <div>
+                        <label htmlFor="photoDesc" className="block text-sm font-medium text-slate-400 mb-1">
+                            Transformation Instructions <span className="text-red-400">*</span>
+                        </label>
+                        <textarea
+                            id="photoDesc"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="e.g., Make them Christmas themed in Simpsons style"
+                            rows={3}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white placeholder-slate-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all resize-none"
+                            required
+                            disabled={loading}
+                        />
+                        </div>
+
+                        <div className="space-y-3">
+                            <label className="block text-sm font-medium text-slate-400">Reference Image</label>
+                            <div className="relative border-2 border-dashed border-slate-700 rounded-lg hover:border-indigo-500/50 transition-colors bg-slate-900/50">
+                                <input 
+                                    type="file" 
+                                    accept="image/*"
+                                    ref={photoInputRef}
+                                    onChange={handlePhotoChange}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                    disabled={loading}
+                                />
+                                <div className="p-6 flex flex-col items-center justify-center text-slate-500">
+                                    {photoFile ? (
+                                        <>
+                                            <div className="text-indigo-400 mb-1 flex items-center gap-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                                Selected:
+                                            </div>
+                                            <span className="text-sm font-mono truncate max-w-[200px]">{photoFile.name}</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="w-8 h-8 mb-2 opacity-50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                            <span className="text-sm">Click to upload photo</span>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <Button type="submit" isLoading={loading} className="w-full mt-2 shadow-lg shadow-indigo-500/20">
+                            {loading ? (
+                                <span className="flex items-center gap-2">
+                                <svg className="animate-spin h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                {loadingText}
+                                </span>
+                            ) : "Transform & Trace"}
+                        </Button>
+                    </form>
                 )}
 
                 {/* Error Display */}
@@ -558,6 +756,7 @@ const App: React.FC = () => {
                <ul className="list-disc pl-4 space-y-2">
                  <li><strong>Standard:</strong> Instant generation & tracing.</li>
                  <li><strong>Batch:</strong> Processes one by one with a 5s delay between items to respect API limits.</li>
+                 <li><strong>Photo Transform:</strong> Uploads a reference image and restyles it based on your description and selected style.</li>
                  <li><strong>Styles:</strong> Apply to all batch items.</li>
                  <li><strong>Privacy:</strong> Files are processed locally in your browser.</li>
                </ul>
@@ -584,7 +783,7 @@ const App: React.FC = () => {
                         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
                      </div>
                      <h3 className="text-lg font-medium text-slate-300">No icons yet</h3>
-                     <p className="text-slate-500 mt-2">Enter a name or upload a CSV. We'll generate images and trace them to SVG.</p>
+                     <p className="text-slate-500 mt-2">Enter a name, upload a CSV, or transform a photo. We'll generate images and trace them to SVG.</p>
                    </div>
                 </div>
              )}
