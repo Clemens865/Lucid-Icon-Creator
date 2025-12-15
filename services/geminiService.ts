@@ -6,416 +6,417 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 const STYLE_PROMPTS: Record<IconStyle, string> = {
   // --- BASE ---
   lucid: `
-    Style: STRICTLY Minimalist "Lucid" / "Feather" Icon.
-    - Lines: Uniform thickness, rounded caps, rounded corners.
-    - Geometry: Simple strokes, open shapes.
-    - Vibe: Clean, friendly, tech-forward, functional.
+    Style: Minimalist "Lucid" Icon.
+    - Uniform line thickness, rounded caps.
+    - Simple strokes, open shapes.
+    - Clean, friendly, functional.
   `,
 
   // --- 3D STYLES ---
   photorealistic: `
-    Style: Photorealistic 3D / Engraving style.
-    - Visuals: Detailed lighting simulation using lines.
-    - Technique: Use woodcut-style hatching or engraved lines to represent shading. Do not use gradients.
-    - Vibe: Premium, detailed, classic 3D.
+    Style: Photorealistic Engraving.
+    - Detailed lighting using lines.
+    - Woodcut-style hatching for shading. No gradients.
+    - Premium, classic.
   `,
   photorealistic_angled: `
-    Style: Photorealistic 3D (Angled View).
-    - Visuals: Object shown in a 3/4 perspective or dynamic angle. Detailed lighting.
-    - Technique: Woodcut-style hatching or engraved lines to represent shading and depth. Deep contrast.
-    - Vibe: Cinematic, premium, classic 3D engraving.
+    Style: Photorealistic Angled View.
+    - Object in 3/4 perspective.
+    - Woodcut-style hatching for depth. Deep contrast.
+    - Cinematic, premium.
   `,
   clay_3d: `
-    Style: Smooth Clay 3D (Soft Monochrome).
-    - Visuals: Soft, rounded, organic forms.
-    - Technique: Thick, soft black outlines. Use blob-like black shadows to indicate depth.
-    - Vibe: Friendly, tactile, modern.
+    Style: Soft Clay 3D.
+    - Soft, rounded, organic forms.
+    - Thick, soft black outlines. Blob-like shadows.
+    - Friendly, tactile.
   `,
   low_poly: `
-    Style: Low Poly 3D (Wireframe/Faceted).
-    - Visuals: Faceted geometric triangles, angular meshes.
-    - Technique: CRITICAL: Draw black outlines for EVERY edge of the polygons. Do not use solid fills. It must look like a wireframe or stained glass.
-    - Vibe: Digital, structural, modern gaming.
+    Style: Low Poly Wireframe.
+    - Faceted geometric triangles.
+    - Black outlines for every polygon edge. No solid fills.
+    - Digital, structural.
   `,
   glossy_3d: `
-    Style: Glossy Plastic 3D.
-    - Visuals: Shiny surfaces, distinct specular highlights.
-    - Technique: Black surfaces with large, sharp WHITE shapes to represent reflection. High contrast light and dark.
-    - Vibe: Toy-like, sleek, modern.
+    Style: Glossy Plastic.
+    - Shiny surfaces, specular highlights.
+    - Black surfaces with sharp WHITE shapes for reflection.
+    - Toy-like, sleek.
   `,
   isometric_3d: `
-    Style: Isometric 3D (Line Art).
-    - Visuals: 30-degree angles, dimensional structures, cubes, spatial depth.
-    - Technique: Uniform line weight, clean technical drawing.
-    - Vibe: Structural, engineering, precise.
+    Style: Isometric Line Art.
+    - 30-degree angles, dimensional structures.
+    - Uniform line weight, technical drawing.
+    - Structural, precise.
   `,
   isometric_rounded: `
-    Style: Rounded Isometric 3D (45°).
-    - Visuals: 45-degree isometric view with smoothed, rounded edges.
-    - Technique: Clean vector lines, soft corners, friendly geometry.
-    - Vibe: Soft, modern, approachable 3D.
+    Style: Rounded Isometric (45 degrees).
+    - Isometric view with smoothed, rounded edges.
+    - Clean lines, friendly geometry.
+    - Soft, modern.
   `,
   metallic_3d: `
-    Style: Metallic 3D.
-    - Visuals: Chrome/Brushed Metal.
-    - Technique: High contrast horizon lines. Use bands of black and white to simulate cylindrical reflections.
-    - Vibe: Industrial, premium, strong.
+    Style: Metallic.
+    - Chrome/Brushed Metal.
+    - High contrast horizon lines. Bands of black and white for reflection.
+    - Industrial, strong.
   `,
   glass_3d: `
-    Style: Glass / Transparent 3D.
-    - Visuals: Refraction, transparency, see-through layers.
-    - Technique: Thin outlines, refraction lines, overlap indicators.
-    - Vibe: Airy, light, futuristic.
+    Style: Glass / Transparent.
+    - Refraction, transparency.
+    - Thin outlines, refraction lines, overlap indicators.
+    - Airy, futuristic.
   `,
   voxel_3d: `
-    Style: Voxel Cubic 3D (Outlined).
-    - Visuals: Stacked 3D cubes (Minecraft style).
-    - Technique: Draw THICK BLACK OUTLINES for every individual cube. Distinct separation between blocks is required.
-    - Vibe: Digital construction, retro-3D.
+    Style: Voxel Cubic (Outlined).
+    - Stacked 3D cubes.
+    - Thick black outlines for every cube. Distinct separation.
+    - Digital construction.
   `,
   balloon_3d: `
-    Style: Inflated Balloon 3D.
-    - Visuals: Puffy, tight seams, high internal pressure.
-    - Technique: Round forms with pinch points. Use white circular highlights on black forms to show gloss.
-    - Vibe: Party, light, pop.
+    Style: Inflated Balloon.
+    - Puffy, tight seams.
+    - Round forms with pinch points. White circular highlights.
+    - Party, pop.
   `,
   liquid_3d: `
-    Style: Melting Liquid 3D.
-    - Visuals: Dripping, flowing, viscous fluid.
-    - Technique: Smooth curves, teardrop shapes, connecting blobs.
-    - Vibe: Surreal, artistic, fluid.
+    Style: Melting Liquid.
+    - Dripping, flowing, viscous fluid.
+    - Smooth curves, teardrops, connecting blobs.
+    - Surreal, fluid.
   `,
 
   // --- LOGO & PROFESSIONAL ---
   material: `
-    Style: Material Design (Google).
-    - Visuals: Flat layers, paper-like physics.
-    - Technique: Subtle drop shadows represented by solid black shapes. Clean geometric forms.
-    - Vibe: Android, enterprise, clean.
+    Style: Material Design.
+    - Flat layers, paper physics.
+    - Solid black shapes for shadows. Geometric forms.
+    - Enterprise, clean.
   `,
   fluent: `
-    Style: Fluent Design (Microsoft).
-    - Visuals: Weightless, light, depth.
-    - Technique: Clean lines, perspective hints, functional simplicity.
-    - Vibe: Windows, modern UI, efficient.
+    Style: Fluent Design.
+    - Weightless, light, depth.
+    - Clean lines, perspective hints.
+    - Modern UI, efficient.
   `,
   logo_mark: `
-    Style: Logo Mark / Brand Identity.
-    - Visuals: Bold, memorable, reductive.
-    - Technique: Solid fills, high contrast, scalable vector aesthetic.
-    - Vibe: Iconic, trustworthy, corporate.
+    Style: Logo Mark.
+    - Bold, memorable, reductive.
+    - Solid fills, high contrast.
+    - Iconic, corporate.
   `,
   corporate: `
     Style: Corporate Minimal.
-    - Visuals: Grid-based, ultra-clean, nonsense-free.
-    - Technique: Thin to medium uniform lines, perfect geometry.
-    - Vibe: Professional, serious, B2B.
+    - Grid-based, ultra-clean.
+    - Thin to medium uniform lines, perfect geometry.
+    - Professional, B2B.
   `,
   startup: `
-    Style: Tech Startup / SaaS.
-    - Visuals: Friendly geometry, slightly rounded but structured.
-    - Technique: Bold strokes, simple composition, "Notion-style" simplicity.
-    - Vibe: Modern, agile, digital.
+    Style: Tech Startup.
+    - Friendly geometry, slightly rounded.
+    - Bold strokes, simple composition.
+    - Modern, agile.
   `,
   mascot: `
-    Style: Esports Mascot Logo.
-    - Visuals: Aggressive, dynamic, character-based.
-    - Technique: Thick bold outer contours, sharp angular internal shading blocks.
-    - Vibe: Competitive, gaming, energetic.
+    Style: Esports Mascot.
+    - Aggressive, dynamic character.
+    - Thick bold outer contours, angular shading blocks.
+    - Competitive, energetic.
   `,
   monogram: `
-    Style: Luxury Monogram / Interlocking.
-    - Visuals: Interwoven lines, letter-like geometric abstraction.
-    - Technique: Consistent stroke width, geometric weaving, symmetry.
-    - Vibe: High-end, sophisticated, brand-focused.
+    Style: Luxury Monogram.
+    - Interwoven lines, letter-like abstraction.
+    - Consistent stroke width, symmetry.
+    - High-end, sophisticated.
   `,
   flat_25d: `
     Style: Flat 2.5D.
-    - Visuals: Isometric perspective but flat colors.
-    - Technique: Side faces are black, top faces white (or vice versa). Distinct planes.
-    - Vibe: Informative, dimensional but clean.
+    - Isometric perspective, flat colors.
+    - distinct planes (black vs white).
+    - Informative, clean.
   `,
   duotone: `
-    Style: Duotone Split (Black & White).
-    - Visuals: Sharp division between light and shadow.
-    - Technique: One half of the icon is outlined, the other half is solid filled.
-    - Vibe: Stylish, high contrast, modern.
+    Style: Duotone Split.
+    - Sharp division between light and shadow.
+    - Half outlined, half solid filled.
+    - Stylish, modern.
   `,
   badge: `
-    Style: Outlined Badge / Emblem.
-    - Visuals: Enclosed in a shape (circle, hexagon, shield).
-    - Technique: Uniform stroke width, contained composition.
-    - Vibe: Official, verified, secure.
+    Style: Outlined Badge.
+    - Enclosed in a shape (circle/shield).
+    - Uniform stroke width.
+    - Official, verified.
   `,
 
   // --- TECHNICAL & SCHEMATIC ---
   blueprint: `
-    Style: Technical Blueprint / Schematic.
-    - Visuals: Engineering diagram look.
-    - Technique: Thin, precise lines. Include small dashed "construction lines" and dimension markers (arrows/ticks).
-    - Vibe: Precise, planned, industrial.
+    Style: Technical Blueprint.
+    - Engineering diagram.
+    - Thin precise lines, small dashed construction lines.
+    - Planned, industrial.
   `,
   architectural: `
     Style: Architectural Sketch.
-    - Visuals: Draftsman concept drawing.
-    - Technique: Loose but straight lines, "corner overshoots" (lines crossing at vertices), perspective guide lines.
-    - Vibe: Creative, structural, visionary.
+    - Draftsman concept.
+    - Loose but straight lines, corner overshoots.
+    - Creative, structural.
   `,
   circuit: `
-    Style: Printed Circuit Board (PCB).
-    - Visuals: Tech nodes, traces.
-    - Technique: Lines ending in circular pads/dots. 45-degree angle turns.
-    - Vibe: Hardware, electronic, connected.
+    Style: PCB Circuit.
+    - Tech nodes, traces.
+    - Lines ending in dots. 45-degree turns.
+    - Hardware, electronic.
   `,
   neon: `
     Style: Neon Sign.
-    - Visuals: Glowing glass tubes.
-    - Technique: Double outlines (parallel lines) to represent the glass tube thickness. Rounded ends. Gaps for "connectors".
-    - Vibe: Nightlife, retro-tech, vibrant.
+    - Glowing glass tubes.
+    - Double outlines (parallel lines), rounded ends.
+    - Nightlife, retro-tech.
   `,
 
   // --- FUN & COMIC ---
   kawaii: `
-    Style: Kawaii / Cute Chibi.
-    - Visuals: Exaggerated rounded proportions, big heads (if character), small details.
-    - Technique: Soft rounded lines, minimal detail, often adding a simple face (eyes/mouth) to objects.
-    - Vibe: Adorable, soft, happy.
+    Style: Kawaii / Cute.
+    - Exaggerated rounded proportions, big heads.
+    - Soft rounded lines, minimal detail.
+    - Adorable, happy.
   `,
   classic_animation: `
-    Style: Classic Feature Animation (Disney Renaissance Style).
-    - Visuals: Smooth, flowing, appealing line art.
-    - Technique: Elegant tapered ink lines. Expressive shapes.
-    - Vibe: Magical, polished, cinematic.
+    Style: Classic Animation.
+    - Smooth, flowing line art.
+    - Elegant tapered ink lines.
+    - Magical, polished.
   `,
   rubber_hose: `
-    Style: Vintage 1930s Cartoon (Rubber Hose).
-    - Visuals: Pie-cut eyes, noodle limbs, white gloves.
-    - Technique: Uniform thick black lines, bounce, no joints.
-    - Vibe: Retro, cheerful, jazzy.
+    Style: Vintage 1930s Cartoon.
+    - Pie-cut eyes, noodle limbs.
+    - Uniform thick black lines, bounce.
+    - Retro, cheerful.
   `,
   tv_cartoon: `
-    Style: Prime Time TV Cartoon (Simpsons/Groening Style).
-    - Visuals: Bulging eyes, overbites, distinct silhouettes.
-    - Technique: Clean uniform outlines, slightly crude but expressive.
-    - Vibe: Satirical, funny, familiar.
+    Style: Prime Time TV Cartoon.
+    - Overbites, distinct silhouettes.
+    - Clean uniform outlines.
+    - Satirical, funny.
   `,
   superhero: `
-    Style: Modern Superhero Comic.
-    - Visuals: Dynamic action, dramatic heavy shadows (spot blacks).
-    - Technique: Varying line weights, detailed musculature/structure, hatching.
-    - Vibe: Epic, strong, intense.
+    Style: Superhero Comic.
+    - Dynamic action, heavy shadows (spot blacks).
+    - Varying line weights, musculature.
+    - Epic, strong.
   `,
   graffiti: `
-    Style: Graffiti / Street Art.
-    - Visuals: Bubble letters style, drips, arrows.
-    - Technique: Ultra thick outlines, overlapping shapes.
-    - Vibe: Urban, rebellious, cool.
+    Style: Graffiti.
+    - Bubble letters style, drips.
+    - Ultra thick outlines.
+    - Urban, rebellious.
   `,
   retro_anime: `
-    Style: 90s Retro Anime / Manga.
-    - Visuals: Cel-shaded aesthetic, dramatic lighting shapes.
-    - Technique: Sharp, angular shadow blocks (solid black) against white highlights. Speed lines.
-    - Vibe: Nostalgic, action-oriented, distinct.
+    Style: 90s Retro Anime.
+    - Cel-shaded, dramatic lighting.
+    - Sharp angular shadow blocks against white.
+    - Nostalgic, action.
   `,
   sticker: `
-    Style: Die-Cut Sticker Art.
-    - Visuals: Looks like a physical sticker with a border.
-    - Technique: VERY THICK bold outer contour line (uniform weight). Simpler inner details.
-    - Vibe: Collectible, street, pop.
+    Style: Die-Cut Sticker.
+    - Sticker with border.
+    - Very thick bold outer contour.
+    - Collectible, pop.
   `,
   comic: `
-    Style: Comic Book / Pop (Legacy).
-    - Visuals: Dynamic, bold.
-    - Technique: Heavy outlines, "Kirby dots" or speed lines for energy.
-    - Vibe: Action, energetic, story.
+    Style: Comic Book.
+    - Dynamic, bold.
+    - Heavy outlines, "Kirby dots".
+    - Action, story.
   `,
   pop_art: `
     Style: Pop Art.
-    - Visuals: Comic book style, high contrast, dynamic explosive shapes.
-    - Technique: Very thick outlines.
-    - Vibe: Energetic, loud.
+    - High contrast, explosive shapes.
+    - Very thick outlines.
+    - Energetic, loud.
   `,
 
   // --- CRAFT & TEXTURE ---
   paper_cutout: `
-    Style: Paper Cutout Art.
-    - Visuals: Layered paper aesthetic.
-    - Technique: Shapes defined by sharp, solid black drop shadows to imply depth and layers.
-    - Vibe: Craft, tactile, depth.
+    Style: Paper Cutout.
+    - Layered paper.
+    - Shapes defined by sharp drop shadows.
+    - Craft, tactile.
   `,
   embroidery: `
-    Style: Embroidery / Stitch Patch.
-    - Visuals: Thread texture.
-    - Technique: Lines made of small dashed "stitches". Fabric-like cross-hatching.
-    - Vibe: Handmade, cozy, textured.
+    Style: Embroidery.
+    - Thread texture.
+    - Lines made of small stitches.
+    - Handmade, cozy.
   `,
 
   // --- HAND DRAWN & ORGANIC ---
   crayon: `
-    Style: Kids Crayon Drawing.
-    - Visuals: Rough, waxy texture strokes.
-    - Technique: Broken edges, uneven pressure, naive composition.
-    - Vibe: Innocent, playful, raw.
+    Style: Crayon Drawing.
+    - Rough, waxy texture.
+    - Broken edges, uneven pressure.
+    - Innocent, playful.
   `,
   ink_sketch: `
-    Style: Ink Sketch (Legacy).
-    - Visuals: Fast pen strokes, varying line width.
-    - Technique: Loose gestural lines, ink bleed effect, imperfections.
-    - Vibe: Human, artisanal, brainstorming.
+    Style: Ink Sketch.
+    - Fast pen strokes.
+    - Loose gestural lines, ink bleed.
+    - Human, artisanal.
   `,
   sketch: `
-    Style: Hand-Drawn / Ink Sketch.
-    - Visuals: Imperfect, organic, variable width lines.
-    - Technique: Slightly wobbly (wabi-sabi) lines.
-    - Vibe: Artisanal, casual.
+    Style: Hand-Drawn Sketch.
+    - Imperfect, variable width lines.
+    - Slightly wobbly.
+    - Casual.
   `,
   doodle: `
     Style: Notebook Doodle.
-    - Visuals: Casual, loopy, ballpoint pen style.
-    - Technique: Thin lines, multiple pass strokes, casual shading.
-    - Vibe: Informal, creative, rough.
+    - Casual, loopy, ballpoint.
+    - Thin lines, multiple pass strokes.
+    - Informal, creative.
   `,
   chalk: `
-    Style: Chalk Texture.
-    - Visuals: Dusty, grainy edges.
-    - Technique: Stipple texture on edges, broad strokes. (Rendered as Black on White).
-    - Vibe: Educational, rustic, handmade.
+    Style: Chalk.
+    - Dusty, grainy edges.
+    - Stipple texture. (Black on White).
+    - Rustic, handmade.
   `,
   marker: `
     Style: Permanent Marker.
-    - Visuals: Thick, bold, slight bleed.
-    - Technique: Heavy constant width lines, rounded ends.
-    - Vibe: Bold, workshop, loud.
+    - Thick, bold, slight bleed.
+    - Heavy constant width lines.
+    - Bold, loud.
   `,
 
   // --- ABSTRACT & ARTISTIC ---
   geometric: `
     Style: Geometric Abstract.
-    - Visuals: Shapes composed entirely of primitive circles, triangles, squares.
-    - Technique: Clean lines, mathematical composition.
-    - Vibe: Modern art, structured, purity.
+    - Primitives (circles, triangles, squares).
+    - Clean lines, mathematical.
+    - Modern art, structured.
   `,
   fluid: `
     Style: Fluid Organic.
-    - Visuals: Amoeba-like shapes, no straight lines.
-    - Technique: Smooth flowing curves, blobbiness.
-    - Vibe: Natural, soft, adaptive.
+    - Amoeba-like shapes, no straight lines.
+    - Smooth flowing curves.
+    - Natural, soft.
   `,
   glitch: `
     Style: Glitch Art.
-    - Visuals: Digital corruption, data moshing.
-    - Technique: Horizontal slicing, pixel displacement, noise blocks.
-    - Vibe: Cyber, error, edgy.
+    - Digital corruption.
+    - Horizontal slicing, pixel displacement.
+    - Cyber, edgy.
   `,
   single_line: `
-    Style: Minimalist Single Line.
-    - Visuals: Continuous line drawing.
-    - Technique: One unbroken stroke defines the entire shape. No lifting the pen.
-    - Vibe: Elegant, sophisticated, connected.
+    Style: Single Line.
+    - Continuous line drawing.
+    - One unbroken stroke.
+    - Elegant, connected.
   `,
   splatter: `
-    Style: Splatter / Ink Drop.
-    - Visuals: Chaotic splashes, droplets.
-    - Technique: Main shape defined by negative space amidst ink splatter or composed of splashes.
-    - Vibe: Expressive, messy, energetic.
+    Style: Splatter.
+    - Chaotic splashes.
+    - Shape defined by negative space or splashes.
+    - Expressive, messy.
   `,
   negative_space: `
     Style: Negative Space.
-    - Visuals: The subject is defined by what is NOT drawn.
-    - Technique: Solid black background block with white subject cut out (or vice versa).
-    - Vibe: Clever, bold, high contrast.
+    - Subject defined by what is NOT drawn.
+    - Solid black block with white cutout.
+    - Clever, bold.
   `,
 
   // --- ART MOVEMENTS & THEMATIC ---
   bauhaus: `
-    Style: Bauhaus / Constructivist.
-    - Visuals: Basic geometric primitives (circles, squares, triangles), asymmetrical balance.
-    - Technique: Mix of heavy blocks and fine lines.
+    Style: Bauhaus.
+    - Geometric primitives, asymmetrical.
+    - Mix of heavy blocks and fine lines.
   `,
   swiss: `
-    Style: Swiss International Style.
-    - Visuals: Grid-based, mathematical, right angles, perfect circles.
-    - Technique: Very heavy bold strokes.
-    - Vibe: Corporate, reliable.
+    Style: Swiss International.
+    - Grid-based, mathematical.
+    - Very heavy bold strokes.
+    - Corporate.
   `,
   art_deco: `
-    Style: Art Deco / Streamline Moderne.
-    - Visuals: Sunburst motifs, parallelism, symmetrical, elegant curves.
-    - Technique: Thick/thin parallel lines.
-    - Vibe: Sophisticated, luxury.
+    Style: Art Deco.
+    - Sunbursts, parallel lines.
+    - Elegant curves.
+    - Luxury.
   `,
   brutalist: `
-    Style: Brutalist / Neo-Brutalist.
-    - Visuals: Raw, unpolished, exaggerated proportions, bold shadows.
-    - Technique: Thick jagged/blocky lines.
-    - Vibe: Aggressive, web3.
+    Style: Brutalist.
+    - Raw, blocky, exaggerated.
+    - Thick jagged lines.
+    - Aggressive.
   `,
   mid_century: `
-    Style: Mid-Century Modern (Atomic Age).
-    - Visuals: Organic kidney shapes, starbursts, boomerangs, fluid rhythmic lines.
-    - Vibe: 1950s optimism.
+    Style: Mid-Century Modern.
+    - Organic kidney shapes, starbursts.
+    - Fluid rhythmic lines.
+    - Optimistic.
   `,
   japanese: `
-    Style: Japanese Minimalist (Hanko/Brush).
-    - Visuals: Zen simplicity, negative space.
-    - Technique: Sumi-e brush strokes OR precise Kamon crest design.
+    Style: Japanese Minimalist.
+    - Zen simplicity.
+    - Brush strokes or crest design.
   `,
   cyberpunk: `
-    Style: Cyberpunk / Tech Interface.
-    - Visuals: Circuitry patterns, glitches, data points, angular 45-degree cuts.
-    - Vibe: Dystopian, high-tech.
+    Style: Cyberpunk.
+    - Circuitry, glitches, angular cuts.
+    - High-tech.
   `,
   art_nouveau: `
-    Style: Art Nouveau (Jugendstil).
-    - Visuals: Flowing organic lines, whiplash curves, plant-like forms.
-    - Technique: Sinuous varying thickness.
-    - Vibe: Natural, romantic.
+    Style: Art Nouveau.
+    - Flowing organic lines, plant forms.
+    - Sinuous varying thickness.
+    - Romantic.
   `,
   de_stijl: `
-    Style: De Stijl / Neoplasticism.
-    - Visuals: Strictly horizontal/vertical lines, rectangular blocks.
-    - Technique: Thick black grids.
-    - Vibe: Order, harmony.
+    Style: De Stijl.
+    - Horizontal/vertical lines only.
+    - Thick black grids.
+    - Order.
   `,
   pixel: `
-    Style: Pixel Art / 8-Bit.
-    - Visuals: Low-resolution digital aesthetic, stepped edges.
-    - Technique: Blocky, grid-aligned squares.
-    - Vibe: Retro gaming.
+    Style: Pixel Art.
+    - Low-res, stepped edges.
+    - Blocky squares.
+    - Retro.
   `,
   tribal: `
-    Style: Tribal / Aztec Geometric.
-    - Visuals: Indigenous patterns, steps, repetitive motifs.
-    - Technique: Bold angular lines, diamonds/triangles/stairs.
+    Style: Tribal.
+    - Indigenous patterns.
+    - Bold angular lines.
   `,
   origami: `
-    Style: Origami / Paper Fold.
-    - Visuals: Faceted planes, sharp creases, polygons.
-    - Technique: Angular straight lines.
-    - Vibe: Sharp, precise.
+    Style: Origami.
+    - Faceted planes, creases.
+    - Angular straight lines.
+    - Precise.
   `,
   stencil: `
-    Style: Industrial Stencil.
-    - Visuals: Spray-paint aesthetic.
-    - Technique: Broken lines (bridges), thick disconnected segments.
-    - Vibe: Urban, industrial.
+    Style: Stencil.
+    - Bridges, broken lines.
+    - Thick segments.
+    - Urban.
   `,
   victorian: `
-    Style: Victorian / Woodcut.
-    - Visuals: Etching style, intricate fine engraved look.
-    - Technique: Hatching lines for shading.
-    - Vibe: Classic, vintage scientific.
+    Style: Victorian Woodcut.
+    - Intricate fine engraved look.
+    - Hatching lines.
+    - Vintage.
   `,
   steampunk: `
-    Style: Steampunk / Victorian Sci-Fi.
-    - Visuals: Gears, cogs, brass aesthetics, mechanical complexity.
-    - Technique: Detailed ornamental lines.
+    Style: Steampunk.
+    - Gears, brass aesthetics.
+    - Detailed ornamental lines.
   `,
   gothic: `
-    Style: Gothic / Blackletter.
-    - Visuals: Sharp arches, spikes, dense detail, calligraphy influence.
-    - Technique: Angular vertical stress.
-    - Vibe: Dark, medieval.
+    Style: Gothic.
+    - Sharp arches, spikes.
+    - Angular vertical stress.
+    - Dark.
   `
 };
 
@@ -452,9 +453,15 @@ const extractImage = (response: any): string => {
     }
 
     if (!base64Image) {
+      // Check if it looks like an empty code block which often signifies a model confusion/refusal
+      if (failureText.includes("```")) {
+         console.warn("Model returned code block instead of image:", failureText);
+         throw new Error("The model refused to generate an image (returned text/code block). Please try simpler terms.");
+      }
+      
       console.warn("Gemini returned text instead of image:", failureText);
       const errorMessage = failureText 
-        ? `Model Refusal: ${failureText.slice(0, 200)}` 
+        ? `Model Output Text: ${failureText.slice(0, 200)}` 
         : `Failed to generate image. Finish Reason: ${candidate.finishReason || 'Unknown'}`;
       throw new Error(errorMessage);
     }
@@ -478,25 +485,23 @@ export const generateIcon = async (
     // Fallback to lucid if style not found
     const styleInstruction = STYLE_PROMPTS[style] || STYLE_PROMPTS['lucid'];
 
-    // Updated prompt: Hardened to prevent conversational text and force image output
+    // Simplified prompt to avoid model confusion/refusal
     const imagePrompt = `
-      Create an image of an icon.
+      Generate an icon image.
       
-      Request:
-      - Subject: ${name}
-      ${description ? `- Description: ${description}` : ""}
-      - Style: ${style}
+      Subject: ${name}
+      ${description ? `Context: ${description}` : ""}
+      Style: ${style}
       
-      Visual Style Definition:
+      Visual Rules:
       ${styleInstruction}
 
-      Strict Constraints:
-      1. RETURN AN IMAGE ONLY. Do not generate conversation, intro text, or descriptions.
-      2. Color: Black (#000000) lines/shapes on White (#FFFFFF) background.
-      3. CRITICAL: Do NOT render the text "${name}" inside the image. Visual representation only.
-      4. No text characters, letters, or numbers unless explicitly asked for in the Description.
-      5. No gradients, no greyscale.
-      6. Centered, high contrast, solid shapes.
+      Constraints:
+      - Output: Image only.
+      - Color: Black shapes on White background.
+      - Content: Visual representation only.
+      - Negative Constraint: Do not include the text "${name}" or any words in the image.
+      - No gradients, no greyscale.
     `;
 
     const imageResponse = await ai.models.generateContent({
@@ -535,34 +540,27 @@ export const generateIconFromReference = async (
         const styleInstruction = STYLE_PROMPTS[style] || STYLE_PROMPTS['lucid'];
     
         const imagePrompt = `
-          Role: Expert Vector Illustrator.
+          Role: Icon Artist.
           
-          Task: Create a stylistic reinterpretation of the reference image.
+          Task: Restyle the reference image into an icon.
           Target Style: ${style}
           Subject: ${name}
-          Context/Action: ${description}
+          Context: ${description}
 
-          CRITICAL STYLE OVERRIDE:
-          1. IGNORE the realistic textures, shading, and exact facial proportions of the reference photo.
-          2. CAPTURE ONLY the pose, composition, and key elements.
-          3. REDRAW everything from scratch using the specific visual rules of the "${style}" style.
-          
-          IF PEOPLE ARE PRESENT:
-          - Do NOT preserve their realistic likeness.
-          - You MUST caricaturize them to fit the "${style}".
-          - Example: If the style is "TV Cartoon" or "Simpsons", give them the specific eyes, jawlines, and body proportions of that show.
-          - Example: If the style is "Kawaii", make them cute with big heads and small bodies.
-          - Example: If the style is "Abstract", remove the face entirely or use simple shapes.
+          Instructions:
+          1. Use the reference for pose and composition only.
+          2. IGNORE realistic textures and shading.
+          3. Re-draw everything using the "${style}" style rules.
+          4. If people are present, caricature them to match the style (e.g. adjust proportions, simplify faces).
 
-          VISUAL STYLE RULES (STRICTLY APPLY):
+          Visual Rules:
           ${styleInstruction}
 
-          OUTPUT REQUIREMENTS:
-          1. PURE Black & White (#000000 on #FFFFFF). No greyscale.
-          2. Flat vector illustration style (no gradients).
-          3. CRITICAL: Do NOT write the text "${name}" inside the image. Visuals only.
-          4. Clean lines, bold shapes.
-          5. RETURN IMAGE ONLY.
+          Output Requirements:
+          - Pure Black & White (No Greyscale).
+          - Flat vector illustration style (No Gradients).
+          - Visuals only. Do not write the text "${name}" inside the image.
+          - RETURN IMAGE ONLY.
         `;
     
         // Order changed: Image first, then prompt, to help model context.
