@@ -226,8 +226,7 @@ const App: React.FC = () => {
     try {
       const newIcon = await processGeneration(prompt, description);
       setHistory(prev => [newIcon, ...prev]);
-      setPrompt(''); // Clear input on success
-      setDescription('');
+      // Persistence: Inputs are NOT cleared here.
     } catch (err: any) {
       setError("Failed to generate icon. " + (err.message || ''));
       console.error(err);
@@ -284,11 +283,7 @@ const App: React.FC = () => {
         };
 
         setHistory(prev => [newIcon, ...prev]);
-        // Reset Inputs
-        setPrompt('');
-        setDescription('');
-        setPhotoFile(null);
-        if (photoInputRef.current) photoInputRef.current.value = '';
+        // Persistence: Inputs and File are NOT cleared here.
 
     } catch (err: any) {
         setError("Failed to transform photo. " + (err.message || ''));

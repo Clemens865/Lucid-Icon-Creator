@@ -483,7 +483,7 @@ export const generateIcon = async (
       Create an image of an icon.
       
       Request:
-      - Icon Name: ${name}
+      - Subject: ${name}
       ${description ? `- Description: ${description}` : ""}
       - Style: ${style}
       
@@ -493,8 +493,10 @@ export const generateIcon = async (
       Strict Constraints:
       1. RETURN AN IMAGE ONLY. Do not generate conversation, intro text, or descriptions.
       2. Color: Black (#000000) lines/shapes on White (#FFFFFF) background.
-      3. No gradients, no greyscale, no text characters inside the image.
-      4. Centered, high contrast, solid shapes.
+      3. CRITICAL: Do NOT render the text "${name}" inside the image. Visual representation only.
+      4. No text characters, letters, or numbers unless explicitly asked for in the Description.
+      5. No gradients, no greyscale.
+      6. Centered, high contrast, solid shapes.
     `;
 
     const imageResponse = await ai.models.generateContent({
@@ -558,8 +560,9 @@ export const generateIconFromReference = async (
           OUTPUT REQUIREMENTS:
           1. PURE Black & White (#000000 on #FFFFFF). No greyscale.
           2. Flat vector illustration style (no gradients).
-          3. Clean lines, bold shapes.
-          4. RETURN IMAGE ONLY.
+          3. CRITICAL: Do NOT write the text "${name}" inside the image. Visuals only.
+          4. Clean lines, bold shapes.
+          5. RETURN IMAGE ONLY.
         `;
     
         // Order changed: Image first, then prompt, to help model context.
