@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { GenerationResult, IconStyle } from "../types";
+import { GenerationResult, IconStyle, LogoType } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -430,9 +430,6 @@ const extractImage = (response: any): string => {
 
     if (candidate.finishReason && candidate.finishReason !== "STOP") {
         console.warn("Gemini finish reason:", candidate.finishReason);
-        if (!candidate.content) {
-             throw new Error(`Generation stopped. Reason: ${candidate.finishReason}`);
-        }
     }
 
     let base64Image: string | null = null;
@@ -453,17 +450,19 @@ const extractImage = (response: any): string => {
     }
 
     if (!base64Image) {
-      // Check if it looks like an empty code block which often signifies a model confusion/refusal
-      if (failureText.includes("```")) {
+      const trimmedText = failureText.trim();
+      
+      if (trimmedText.includes("```")) {
          console.warn("Model returned code block instead of image:", failureText);
          throw new Error("The model refused to generate an image (returned text/code block). Please try simpler terms.");
       }
       
-      console.warn("Gemini returned text instead of image:", failureText);
-      const errorMessage = failureText 
-        ? `Model Output Text: ${failureText.slice(0, 200)}` 
-        : `Failed to generate image. Finish Reason: ${candidate.finishReason || 'Unknown'}`;
-      throw new Error(errorMessage);
+      if (trimmedText.length > 0) {
+        console.warn("Gemini returned text instead of image:", failureText);
+        throw new Error(`Model returned text instead of image: "${trimmedText.slice(0, 150)}..."`);
+      }
+      
+      throw new Error(`Failed to generate image. Finish Reason: ${candidate.finishReason || 'Unknown'}`);
     }
 
     return `data:${mimeType};base64,${base64Image}`;
@@ -479,29 +478,17 @@ export const generateIcon = async (
   try {
     if (onStatusUpdate) onStatusUpdate(`Dreaming in ${style} style...`);
     
-    // Step 1: Generate High-Contrast Raster Image
     const imageModel = "gemini-2.5-flash-image";
-    
-    // Fallback to lucid if style not found
     const styleInstruction = STYLE_PROMPTS[style] || STYLE_PROMPTS['lucid'];
 
-    // Simplified prompt to avoid model confusion/refusal
     const imagePrompt = `
-      Generate an icon image.
+      Generate a high-contrast black and white vector icon illustration of ${name}.
+      ${description ? `Description: ${description}` : ""}
       
-      Subject: ${name}
-      ${description ? `Context: ${description}` : ""}
-      Style: ${style}
+      Style: ${style}. ${styleInstruction}
       
-      Visual Rules:
-      ${styleInstruction}
-
-      Constraints:
-      - Output: Image only.
-      - Color: Black shapes on White background.
-      - Content: Visual representation only.
-      - Negative Constraint: Do not include the text "${name}" or any words in the image.
-      - No gradients, no greyscale.
+      Visual constraints: Solid black shapes on a white background. No text labels. No gradients.
+      Output requirement: Return the image only. No text description.
     `;
 
     const imageResponse = await ai.models.generateContent({
@@ -511,15 +498,77 @@ export const generateIcon = async (
 
     const fullBase64 = extractImage(imageResponse);
 
-    // Return just the image data. The App component will handle vectorization.
     return {
-      svg: "", // Will be filled by vectorizer
+      svg: "", 
       name: name, 
       rasterImage: fullBase64
     };
 
   } catch (error) {
     console.error("Icon generation failed:", error);
+    throw error;
+  }
+};
+
+export const generateLogo = async (
+  brandName: string,
+  logoType: LogoType,
+  description?: string,
+  onStatusUpdate?: (status: string) => void,
+  style: IconStyle = 'logo_mark'
+): Promise<GenerationResult> => {
+  try {
+    if (onStatusUpdate) onStatusUpdate(`Designing ${logoType} logo for ${brandName}...`);
+    
+    const imageModel = "gemini-2.5-flash-image";
+    const styleInstruction = STYLE_PROMPTS[style] || STYLE_PROMPTS['logo_mark'];
+
+    // Construct specific instructions based on Logo Type
+    // Changed from "Create a..." instructions to purely descriptive text 
+    // to prevent the model from chatting back.
+    let typeDescription = "";
+    switch (logoType) {
+      case 'icon_only':
+        typeDescription = `A pictorial symbol or abstract mark for the brand "${brandName}". The image contains NO text. Strong visual metaphor.`;
+        break;
+      case 'monogram':
+        typeDescription = `A Monogram logo using the initials/letters of the brand name "${brandName}". Intertwined or combined letters.`;
+        break;
+      case 'wordmark':
+        typeDescription = `A Wordmark (Logotype) for the brand "${brandName}". The text "${brandName}" is rendered clearly in a custom, high-contrast typographic style.`;
+        break;
+      case 'combination':
+        typeDescription = `A Combination Mark for the brand "${brandName}". Includes both a symbol/icon AND the text "${brandName}" next to or below it.`;
+        break;
+    }
+
+    const imagePrompt = `
+      Generate an image of a professional black and white vector logo.
+      
+      Subject: Logo for "${brandName}"
+      Structure: ${typeDescription}
+      Style: ${style}. ${styleInstruction}
+      ${description ? `Context: ${description}` : ""}
+      
+      Visual constraints: High-contrast Black shapes on a White background. No gradients. Flat vector style.
+      Output requirement: Return the image only. No text description.
+    `;
+
+    const imageResponse = await ai.models.generateContent({
+      model: imageModel,
+      contents: { parts: [{ text: imagePrompt }] },
+    });
+
+    const fullBase64 = extractImage(imageResponse);
+
+    return {
+      svg: "",
+      name: brandName,
+      rasterImage: fullBase64
+    };
+
+  } catch (error) {
+    console.error("Logo generation failed:", error);
     throw error;
   }
 };
@@ -540,30 +589,16 @@ export const generateIconFromReference = async (
         const styleInstruction = STYLE_PROMPTS[style] || STYLE_PROMPTS['lucid'];
     
         const imagePrompt = `
-          Role: Icon Artist.
+          Generate a black and white vector icon illustration based on the attached reference image.
           
-          Task: Restyle the reference image into an icon.
-          Target Style: ${style}
           Subject: ${name}
           Context: ${description}
-
-          Instructions:
-          1. Use the reference for pose and composition only.
-          2. IGNORE realistic textures and shading.
-          3. Re-draw everything using the "${style}" style rules.
-          4. If people are present, caricature them to match the style (e.g. adjust proportions, simplify faces).
-
-          Visual Rules:
-          ${styleInstruction}
-
-          Output Requirements:
-          - Pure Black & White (No Greyscale).
-          - Flat vector illustration style (No Gradients).
-          - Visuals only. Do not write the text "${name}" inside the image.
-          - RETURN IMAGE ONLY.
+          Target Style: ${style}. ${styleInstruction}
+          
+          Visual constraints: Capture the composition but redraw in the requested style. Solid black shapes on white. No gradients.
+          Output requirement: Return the image only. No text description.
         `;
     
-        // Order changed: Image first, then prompt, to help model context.
         const imageResponse = await ai.models.generateContent({
           model: imageModel,
           contents: {

@@ -1,3 +1,4 @@
+
 export type IconStyle = 
   // Base
   | 'lucid' 
@@ -24,6 +25,8 @@ export type IconStyle =
   | 'pixel' | 'tribal' | 'origami' | 'stencil' | 'victorian' 
   | 'steampunk' | 'gothic';
 
+export type LogoType = 'icon_only' | 'wordmark' | 'monogram' | 'combination';
+
 export interface IconRequest {
   name: string;
   description?: string;
@@ -34,6 +37,8 @@ export interface GeneratedIcon {
   name: string;
   description?: string;
   style?: IconStyle; // Track the style used
+  type?: 'icon' | 'logo'; 
+  logoType?: LogoType;
   svgContent: string;
   rasterImage?: string; // Base64 PNG of the original generated image
   createdAt: number;

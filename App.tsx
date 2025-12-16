@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import JSZip from 'jszip';
-import { generateIcon, generateIconFromReference } from './services/geminiService';
+import { generateIcon, generateIconFromReference, generateLogo } from './services/geminiService';
 import { traceImageToSvg } from './services/vectorizerService';
-import { GeneratedIcon, IconStyle } from './types';
+import { GeneratedIcon, IconStyle, LogoType } from './types';
 import { Button } from './components/Button';
 import { GeneratedIconCard } from './components/GeneratedIconCard';
 
@@ -23,12 +23,6 @@ const STYLES: { value: IconStyle; label: string; group: string }[] = [
   // Default
   { value: 'lucid', label: 'Lucid (Default)', group: 'Essentials' },
 
-  // Technical & Schematic (New)
-  { value: 'blueprint', label: 'Blueprint / Schematic', group: 'Technical & Schematic' },
-  { value: 'architectural', label: 'Architectural Sketch', group: 'Technical & Schematic' },
-  { value: 'circuit', label: 'Circuit Board (PCB)', group: 'Technical & Schematic' },
-  { value: 'neon', label: 'Neon Sign', group: 'Technical & Schematic' },
-
   // Logo & Professional (Updated)
   { value: 'logo_mark', label: 'Logo Mark', group: 'Logo & Professional' },
   { value: 'mascot', label: 'Esports Mascot', group: 'Logo & Professional' },
@@ -40,6 +34,12 @@ const STYLES: { value: IconStyle; label: string; group: string }[] = [
   { value: 'flat_25d', label: 'Flat 2.5D', group: 'Logo & Professional' },
   { value: 'duotone', label: 'Duotone Split', group: 'Logo & Professional' },
   { value: 'badge', label: 'Outlined Badge', group: 'Logo & Professional' },
+
+  // Technical & Schematic (New)
+  { value: 'blueprint', label: 'Blueprint / Schematic', group: 'Technical & Schematic' },
+  { value: 'architectural', label: 'Architectural Sketch', group: 'Technical & Schematic' },
+  { value: 'circuit', label: 'Circuit Board (PCB)', group: 'Technical & Schematic' },
+  { value: 'neon', label: 'Neon Sign', group: 'Technical & Schematic' },
 
   // Fun & Comic
   { value: 'kawaii', label: 'Kawaii (Cute)', group: 'Fun & Comic' },
@@ -107,13 +107,21 @@ const STYLES: { value: IconStyle; label: string; group: string }[] = [
   { value: 'gothic', label: 'Gothic', group: 'Thematic' },
 ];
 
+const LOGO_TYPES: { value: LogoType; label: string; desc: string }[] = [
+    { value: 'icon_only', label: 'Symbol / Mark', desc: 'Graphic only, no text' },
+    { value: 'wordmark', label: 'Wordmark', desc: 'Stylized typography of name' },
+    { value: 'monogram', label: 'Monogram', desc: 'Initials intertwined' },
+    { value: 'combination', label: 'Combination', desc: 'Icon + Text' },
+];
+
 const App: React.FC = () => {
-  // Single Mode State
+  // Input State
   const [prompt, setPrompt] = useState('');
   const [description, setDescription] = useState('');
+  const [logoType, setLogoType] = useState<LogoType>('icon_only');
   
   // UI State
-  const [mode, setMode] = useState<'single' | 'batch' | 'photo'>('single');
+  const [mode, setMode] = useState<'single' | 'batch' | 'photo' | 'logo'>('single');
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState('Generating...');
   const [zipping, setZipping] = useState(false);
@@ -188,27 +196,35 @@ const App: React.FC = () => {
     });
   };
 
-  // Core generation logic reused by both modes
-  const processGeneration = async (name: string, desc: string): Promise<GeneratedIcon> => {
+  // Core generation logic
+  const processGeneration = async (name: string, desc: string, isLogoMode: boolean = false): Promise<GeneratedIcon> => {
     // Step 1: Generate Image
-    const result = await generateIcon(name, desc, (status) => {
-      // Only update global loading text if in single mode
-      if (mode === 'single') setLoadingText(status);
-    }, selectedStyle);
+    const updateFn = (status: string) => {
+        if (mode === 'single' || mode === 'logo') setLoadingText(status);
+    };
+
+    let result;
+    if (isLogoMode) {
+        result = await generateLogo(name, logoType, desc, updateFn, selectedStyle);
+    } else {
+        result = await generateIcon(name, desc, updateFn, selectedStyle);
+    }
 
     if (!result.rasterImage) {
       throw new Error("No image generated.");
     }
 
     // Step 2: Trace
-    if (mode === 'single') setLoadingText('Tracing Vectors...');
+    if (mode === 'single' || mode === 'logo') setLoadingText('Tracing Vectors...');
     const svgContent = await traceImageToSvg(result.rasterImage);
     
     return {
       id: crypto.randomUUID(),
       name: result.name || name,
       description: desc,
-      style: selectedStyle, // Save the style used
+      style: selectedStyle,
+      type: isLogoMode ? 'logo' : 'icon',
+      logoType: isLogoMode ? logoType : undefined,
       svgContent: svgContent,
       rasterImage: result.rasterImage,
       createdAt: Date.now()
@@ -224,11 +240,10 @@ const App: React.FC = () => {
     setError(null);
 
     try {
-      const newIcon = await processGeneration(prompt, description);
+      const newIcon = await processGeneration(prompt, description, mode === 'logo');
       setHistory(prev => [newIcon, ...prev]);
-      // Persistence: Inputs are NOT cleared here.
     } catch (err: any) {
-      setError("Failed to generate icon. " + (err.message || ''));
+      setError("Failed to generate. " + (err.message || ''));
       console.error(err);
     } finally {
       setLoading(false);
@@ -283,7 +298,6 @@ const App: React.FC = () => {
         };
 
         setHistory(prev => [newIcon, ...prev]);
-        // Persistence: Inputs and File are NOT cleared here.
 
     } catch (err: any) {
         setError("Failed to transform photo. " + (err.message || ''));
@@ -322,7 +336,6 @@ const App: React.FC = () => {
     const lines = text.split(/\r\n|\n/);
     const items: {name: string, desc: string}[] = [];
 
-    // Simple parser: assumes header is row 0
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
@@ -362,7 +375,7 @@ const App: React.FC = () => {
         setBatchLogs(prev => [`Generating "${item.name}" (${selectedStyle})...`, ...prev]);
 
         try {
-          const newIcon = await processGeneration(item.name, item.desc);
+          const newIcon = await processGeneration(item.name, item.desc, false);
           setHistory(prev => [newIcon, ...prev]);
           setBatchLogs(prev => [`✓ Success: "${item.name}"`, ...prev]);
         } catch (err) {
@@ -393,22 +406,18 @@ const App: React.FC = () => {
       const zip = new JSZip();
       const rootFolder = zip.folder("lucidgen-icons");
       
-      // Track file names to avoid collisions within folders
       const usedPaths: Record<string, number> = {};
 
       history.forEach((icon) => {
          if (icon.svgContent) {
-           // Structure: /lucidgen-icons/[StyleName]/[IconName]_[Date].svg
            const styleFolder = icon.style ? icon.style : 'misc';
            const cleanName = icon.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'icon';
            
-           // Use YYYY-MM-DD for sorting
            const date = new Date(icon.createdAt).toISOString().split('T')[0];
            
            const baseName = `${cleanName}_${date}`;
            let filePath = `${styleFolder}/${baseName}.svg`;
 
-           // Handle duplicates
            if (usedPaths[filePath]) {
               usedPaths[filePath]++;
               filePath = `${styleFolder}/${baseName}-${usedPaths[filePath]}.svg`;
@@ -445,7 +454,7 @@ const App: React.FC = () => {
   const StyleSelector = () => (
     <div>
       <label htmlFor="styleSelect" className="block text-sm font-medium text-slate-400 mb-1">
-        Icon Style
+        Visual Style
       </label>
       <div className="relative">
         <select
@@ -455,16 +464,6 @@ const App: React.FC = () => {
           className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-3 pr-10 py-2 text-white appearance-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all cursor-pointer"
           disabled={loading}
         >
-          {STYLES.map((style, index) => {
-             // Basic grouping logic by rendering a disabled option as a header if the group changes
-             const prevGroup = index > 0 ? STYLES[index - 1].group : null;
-             const isNewGroup = prevGroup !== style.group;
-             
-             // Since standard <select> groups are <optgroup>, let's just do that proper way
-             return null;
-          })}
-          
-          {/* Grouping Implementation */}
           {[...new Set(STYLES.map(s => s.group))].map(group => (
             <optgroup key={group} label={group} className="bg-slate-900 text-slate-400 font-semibold">
               {STYLES.filter(s => s.group === group).map(style => (
@@ -513,21 +512,27 @@ const App: React.FC = () => {
               <div className="flex border-b border-slate-700">
                 <button 
                   onClick={() => { setMode('single'); setError(null); }}
-                  className={`flex-1 py-3 text-sm font-medium transition-colors ${mode === 'single' ? 'bg-slate-800 text-white' : 'bg-slate-900 text-slate-400 hover:text-slate-200'}`}
+                  className={`flex-1 py-3 text-sm font-medium transition-colors ${mode === 'single' ? 'bg-slate-800 text-white border-b-2 border-indigo-500' : 'bg-slate-900 text-slate-400 hover:text-slate-200 border-b-2 border-transparent'}`}
                 >
-                  Single
+                  Icon
+                </button>
+                <button 
+                  onClick={() => { setMode('logo'); setError(null); }}
+                  className={`flex-1 py-3 text-sm font-medium transition-colors ${mode === 'logo' ? 'bg-slate-800 text-white border-b-2 border-indigo-500' : 'bg-slate-900 text-slate-400 hover:text-slate-200 border-b-2 border-transparent'}`}
+                >
+                  Logo
                 </button>
                 <button 
                   onClick={() => { setMode('batch'); setError(null); }}
-                  className={`flex-1 py-3 text-sm font-medium transition-colors ${mode === 'batch' ? 'bg-slate-800 text-white' : 'bg-slate-900 text-slate-400 hover:text-slate-200'}`}
+                  className={`flex-1 py-3 text-sm font-medium transition-colors ${mode === 'batch' ? 'bg-slate-800 text-white border-b-2 border-indigo-500' : 'bg-slate-900 text-slate-400 hover:text-slate-200 border-b-2 border-transparent'}`}
                 >
                   Batch
                 </button>
                 <button 
                   onClick={() => { setMode('photo'); setError(null); }}
-                  className={`flex-1 py-3 text-sm font-medium transition-colors ${mode === 'photo' ? 'bg-slate-800 text-white' : 'bg-slate-900 text-slate-400 hover:text-slate-200'}`}
+                  className={`flex-1 py-3 text-sm font-medium transition-colors ${mode === 'photo' ? 'bg-slate-800 text-white border-b-2 border-indigo-500' : 'bg-slate-900 text-slate-400 hover:text-slate-200 border-b-2 border-transparent'}`}
                 >
-                  Photo Transform
+                  Photo
                 </button>
               </div>
 
@@ -535,7 +540,7 @@ const App: React.FC = () => {
                 {mode === 'single' ? (
                   <form onSubmit={handleSingleSubmit} className="flex flex-col gap-4">
                     <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
                       New Icon
                     </h2>
                     
@@ -581,14 +586,90 @@ const App: React.FC = () => {
                             </svg>
                             {loadingText}
                             </span>
-                        ) : "Generate & Trace"}
+                        ) : "Generate Icon"}
+                    </Button>
+                  </form>
+                ) : mode === 'logo' ? (
+                   <form onSubmit={handleSingleSubmit} className="flex flex-col gap-4">
+                    <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                      Logo Generator
+                    </h2>
+                    
+                    <StyleSelector />
+
+                    {/* Logo Type Selector */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-400 mb-2">Logo Structure</label>
+                        <div className="grid grid-cols-2 gap-2">
+                            {LOGO_TYPES.map(type => (
+                                <div 
+                                    key={type.value}
+                                    onClick={() => setLogoType(type.value)}
+                                    className={`cursor-pointer border rounded-lg p-2 text-center transition-all ${logoType === type.value ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500'}`}
+                                >
+                                    <div className="text-xs font-semibold">{type.label}</div>
+                                    <div className="text-[10px] opacity-70 leading-tight mt-1">{type.desc}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="brandName" className="block text-sm font-medium text-slate-400 mb-1">
+                        Brand Name <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        id="brandName"
+                        type="text"
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        placeholder="e.g., Acme Corp"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white placeholder-slate-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="logoDesc" className="block text-sm font-medium text-slate-400 mb-1">
+                        Context / Industry
+                      </label>
+                      <textarea
+                        id="logoDesc"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="e.g., A cyber-security startup looking for a strong, safe vibe."
+                        rows={2}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white placeholder-slate-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all resize-none"
+                        disabled={loading}
+                      />
+                    </div>
+                    
+                    {['wordmark', 'combination'].includes(logoType) && (
+                        <div className="bg-yellow-900/20 border border-yellow-700/30 p-2 rounded text-[11px] text-yellow-500 flex gap-2">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                             AI text generation may have spelling errors. You can trace the result and edit the SVG path later.
+                        </div>
+                    )}
+
+                    <Button type="submit" isLoading={loading} className="w-full mt-2 shadow-lg shadow-indigo-500/20">
+                        {loading ? (
+                            <span className="flex items-center gap-2">
+                                <svg className="animate-spin h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                {loadingText}
+                            </span>
+                        ) : "Generate Logo"}
                     </Button>
                   </form>
                 ) : mode === 'batch' ? (
                   <div className="flex flex-col gap-4">
                      <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
-                      Batch Generator
+                      Batch Icons
                     </h2>
 
                     <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-3 text-xs text-indigo-200">
@@ -749,11 +830,11 @@ const App: React.FC = () => {
             <div className="bg-surface/50 p-6 rounded-xl border border-slate-700/50 text-sm text-slate-400">
                <h3 className="font-semibold text-slate-300 mb-2">Workflow Info:</h3>
                <ul className="list-disc pl-4 space-y-2">
-                 <li><strong>Standard:</strong> Instant generation & tracing.</li>
-                 <li><strong>Batch:</strong> Processes one by one with a 5s delay between items to respect API limits.</li>
-                 <li><strong>Photo Transform:</strong> Uploads a reference image and restyles it based on your description and selected style.</li>
-                 <li><strong>Styles:</strong> Apply to all batch items.</li>
-                 <li><strong>Privacy:</strong> Files are processed locally in your browser.</li>
+                 <li><strong>Icon:</strong> Standard single generation. No text.</li>
+                 <li><strong>Logo:</strong> Designs brand marks, including Monograms and Wordmarks with text.</li>
+                 <li><strong>Batch:</strong> Processes CSV rows one by one (5s delay).</li>
+                 <li><strong>Photo:</strong> Restyles uploaded images.</li>
+                 <li><strong>Privacy:</strong> Files processed locally.</li>
                </ul>
             </div>
           </div>
@@ -777,8 +858,8 @@ const App: React.FC = () => {
                      <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-500">
                         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
                      </div>
-                     <h3 className="text-lg font-medium text-slate-300">No icons yet</h3>
-                     <p className="text-slate-500 mt-2">Enter a name, upload a CSV, or transform a photo. We'll generate images and trace them to SVG.</p>
+                     <h3 className="text-lg font-medium text-slate-300">No designs yet</h3>
+                     <p className="text-slate-500 mt-2">Create an Icon, design a Logo, upload a CSV, or transform a photo.</p>
                    </div>
                 </div>
              )}
